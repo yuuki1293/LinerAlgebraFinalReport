@@ -1,0 +1,20 @@
+# Ignore object files and executables
+*.o
+*.out
+*.exe
+
+# Ignore build directories
+/build/
+/bin/
+/obj/
+
+# Ignore dependency files
+*.d
+
+# Ignore editor and system files
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+.vscode
