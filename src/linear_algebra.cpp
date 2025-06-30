@@ -885,7 +885,7 @@ void RandomMatrixAnalysis::runSingleSizeTest(int n, int testIndex) {
 
     // 行列と固有値・固有ベクトルの保存
     std::string matrixFilename = "data/random_matrix_" + std::to_string(n) + "_" + std::to_string(testIndex) + ".csv";
-    std::string eigenFilename = "data/eigen/eigen_" + std::to_string(n) + "_" + std::to_string(testIndex) + ".csv";
+    std::string eigenFilename = "data/eigen/" + std::to_string(n) + ".csv";
 
     saveMatrixToCSV(matrix, matrixFilename);
 
@@ -1012,7 +1012,7 @@ void RandomMatrixAnalysis::runRandomMatrixTest(int maxSize, int numTests) {
             detailedTimes.push_back(times);
 
             // 固有値と固有ベクトルをCSV保存（横に並べて）
-            std::string eigenFilename = "data/eigen/eigen_" + std::to_string(n) + "_" + std::to_string(test) + ".csv";
+            std::string eigenFilename = "data/eigen/" + std::to_string(n) + ".csv";
             std::ofstream eigenFile(eigenFilename);
             if (eigenFile.is_open()) {
                 // ヘッダー行
