@@ -98,6 +98,11 @@ public:
     // 固有ベクトルの表示
     static void printEigenvector(const std::vector<double>& eigenvector, double eigenvalue, const std::string& name = "固有ベクトル");
 
+    // NaNチェック関数
+    static bool isNaN(const std::complex<double>& value);
+    static bool isNaN(const std::vector<double>& vector);
+    static bool isNaN(const std::vector<std::complex<double>>& eigenvalues);
+
     // 特異値分解
     static void singularValueDecomposition(const std::vector<std::vector<double>>& matrix);
 

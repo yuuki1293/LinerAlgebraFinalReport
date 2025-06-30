@@ -300,7 +300,10 @@ std::vector<std::complex<double>> EigenvalueAnalysis::diagonalizationEigenvalues
     if (!isDiagonalizable(matrix)) {
         std::print("エラー: この行列は対角化できません。\n");
         std::print("理由: 固有値の重複度が高すぎるか、固有ベクトルが線形独立でない可能性があります。\n");
-        return std::vector<std::complex<double>>();
+
+        // NaNの固有値を返す
+        int n = matrix.size();
+        return std::vector<std::complex<double>>(n, std::complex<double>(std::numeric_limits<double>::quiet_NaN(), 0.0));
     }
 
     std::print("行列は対角化可能です。対角化による固有値計算を実行します。\n");
@@ -464,11 +467,17 @@ void EigenvalueAnalysis::eigenvalueDecomposition(const std::vector<std::vector<d
     // 対角化による固有値計算
     std::vector<std::complex<double>> eigenvalues = diagonalizationEigenvalues(matrix);
 
-    if (eigenvalues.empty()) {
-        std::print("対角化できないため、べき乗法で最大固有値を計算します。\n");
-        auto [eigenvalue, eigenvector] = powerMethod(matrix);
-        std::print("最大固有値: {}\n", eigenvalue);
-        printEigenvector(eigenvector, eigenvalue, "対応する固有ベクトル");
+    if (eigenvalues.empty() || isNaN(eigenvalues)) {
+        std::print("対角化できないため、固有値と固有ベクトルをNaNに設定します。\n");
+        std::print("理由: 固有値の重複度が高すぎるか、固有ベクトルが線形独立でない可能性があります。\n");
+
+        // NaNの固有値と固有ベクトルを作成
+        int n = matrix.size();
+        std::vector<std::complex<double>> nanEigenvalues(n, std::complex<double>(std::numeric_limits<double>::quiet_NaN(), 0.0));
+        std::vector<double> nanEigenvector(n, std::numeric_limits<double>::quiet_NaN());
+
+        printEigenvalues(nanEigenvalues, "対角化による固有値（NaN）");
+        printEigenvector(nanEigenvector, std::numeric_limits<double>::quiet_NaN(), "対応する固有ベクトル（NaN）");
         return;
     }
 
@@ -485,7 +494,9 @@ void EigenvalueAnalysis::eigenvalueDecomposition(const std::vector<std::vector<d
 void EigenvalueAnalysis::printEigenvalues(const std::vector<std::complex<double>>& eigenvalues, const std::string& name) {
     std::print("{}:\n", name);
     for (size_t i = 0; i < eigenvalues.size(); i++) {
-        if (std::abs(eigenvalues[i].imag()) < 1e-10) {
+        if (isNaN(eigenvalues[i])) {
+            std::print("λ[{}] = NaN\n", i);
+        } else if (std::abs(eigenvalues[i].imag()) < 1e-10) {
             std::print("λ[{}] = {:.6f}\n", i, eigenvalues[i].real());
         } else {
             std::print("λ[{}] = {:.6f} + {:.6f}i\n", i, eigenvalues[i].real(), eigenvalues[i].imag());
@@ -498,9 +509,32 @@ void EigenvalueAnalysis::printEigenvalues(const std::vector<std::complex<double>
 void EigenvalueAnalysis::printEigenvector(const std::vector<double>& eigenvector, double eigenvalue, const std::string& name) {
     std::print("{} (λ = {}):\n", name, eigenvalue);
     for (size_t i = 0; i < eigenvector.size(); i++) {
-        std::print("v[{}] = {:.6f}\n", i, eigenvector[i]);
+        if (std::isnan(eigenvector[i])) {
+            std::print("v[{}] = NaN\n", i);
+        } else {
+            std::print("v[{}] = {:.6f}\n", i, eigenvector[i]);
+        }
     }
     std::print("\n");
+}
+
+// NaNチェック関数
+bool EigenvalueAnalysis::isNaN(const std::complex<double>& value) {
+    return std::isnan(value.real()) || std::isnan(value.imag());
+}
+
+bool EigenvalueAnalysis::isNaN(const std::vector<double>& vector) {
+    for (double val : vector) {
+        if (std::isnan(val)) return true;
+    }
+    return false;
+}
+
+bool EigenvalueAnalysis::isNaN(const std::vector<std::complex<double>>& eigenvalues) {
+    for (const auto& eigenval : eigenvalues) {
+        if (isNaN(eigenval)) return true;
+    }
+    return false;
 }
 
 // LinearSolver クラスの実装
