@@ -120,16 +120,8 @@ int main() {
     std::print("\n6. ランダム行列テスト\n");
     std::print("--------------------\n");
 
-    // 小規模テスト（n=1~10, 各サイズ1回）
-    std::print("小規模ランダム行列テスト (n=1~10) を実行します...\n");
-    LinearAlgebra::RandomMatrixAnalysis::runRandomMatrixTest(10, 1);
-
-    // 中規模テスト（n=1~50, 各サイズ1回）
-    std::print("\n中規模ランダム行列テスト (n=1~50) を実行します...\n");
-    LinearAlgebra::RandomMatrixAnalysis::runRandomMatrixTest(50, 1);
-
-    // 大規模テスト（n=1~100, 各サイズ1回）- 時間がかかる場合があるため注意
-    std::print("\n大規模ランダム行列テスト (n=1~100) を実行します...\n");
+    // 大規模テスト（n=1~100, 各サイズ1回）
+    std::print("ランダム行列テスト (n=1~100) を実行します...\n");
     std::print("注意: このテストは時間がかかる場合があります。\n");
     LinearAlgebra::RandomMatrixAnalysis::runRandomMatrixTest(100, 1);
 
