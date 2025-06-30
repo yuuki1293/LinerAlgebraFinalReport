@@ -164,6 +164,19 @@ public:
                                 const std::vector<std::vector<std::complex<double>>>& allEigenvalues,
                                 const std::vector<double>& computationTimes);
 
+    // 計算精度・時間のCSV保存
+    static void savePerformanceToCSV(const std::string& filename,
+                                    const std::vector<int>& sizes,
+                                    const std::vector<double>& computationTimes,
+                                    const std::vector<double>& conditionNumbers);
+
+    // 行列特性のCSV保存
+    static void saveMatrixPropertiesToCSV(const std::string& filename,
+                                         const std::vector<int>& sizes,
+                                         const std::vector<double>& determinants,
+                                         const std::vector<int>& ranks,
+                                         const std::vector<std::vector<std::complex<double>>>& allEigenvalues);
+
     // n=1~100のランダム行列テスト実行
     static void runRandomMatrixTest(int maxSize = 100, int numTests = 1);
 

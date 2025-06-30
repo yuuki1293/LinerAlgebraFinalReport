@@ -30,6 +30,11 @@ data/eigenvector_*.csv
 # 固有値・固有ベクトルファイル
 data/eigen/*.csv
 
+# 元の行列ファイル
+data/A/*.csv
+data/B/*.csv
+data/x/
+
 # PDFファイル
 *.pdf
 

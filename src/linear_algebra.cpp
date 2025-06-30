@@ -720,6 +720,60 @@ void RandomMatrixAnalysis::saveResultsToCSV(const std::string& filename,
     }
 }
 
+// 計算精度・時間のCSV保存
+void RandomMatrixAnalysis::savePerformanceToCSV(const std::string& filename,
+                                               const std::vector<int>& sizes,
+                                               const std::vector<double>& computationTimes,
+                                               const std::vector<double>& conditionNumbers) {
+    std::ofstream file(filename);
+    if (file.is_open()) {
+        // ヘッダー行
+        file << "Size,ComputationTime(ms),ConditionNumber" << std::endl;
+
+        // データ行
+        for (size_t i = 0; i < sizes.size(); i++) {
+            file << sizes[i] << ","
+                 << computationTimes[i] << ","
+                 << conditionNumbers[i] << std::endl;
+        }
+        file.close();
+    }
+}
+
+// 行列特性のCSV保存
+void RandomMatrixAnalysis::saveMatrixPropertiesToCSV(const std::string& filename,
+                                                    const std::vector<int>& sizes,
+                                                    const std::vector<double>& determinants,
+                                                    const std::vector<int>& ranks,
+                                                    const std::vector<std::vector<std::complex<double>>>& allEigenvalues) {
+    std::ofstream file(filename);
+    if (file.is_open()) {
+        // ヘッダー行
+        file << "Size,Determinant,Rank,Eigenvalues" << std::endl;
+
+        // データ行
+        for (size_t i = 0; i < sizes.size(); i++) {
+            file << sizes[i] << ","
+                 << determinants[i] << ","
+                 << ranks[i] << ",";
+
+            // 固有値を文字列として保存
+            std::string eigenStr = "";
+            for (size_t j = 0; j < allEigenvalues[i].size(); j++) {
+                if (j > 0) eigenStr += ";";
+                if (std::abs(allEigenvalues[i][j].imag()) < 1e-10) {
+                    eigenStr += std::to_string(allEigenvalues[i][j].real());
+                } else {
+                    eigenStr += std::to_string(allEigenvalues[i][j].real()) + "+" +
+                               std::to_string(allEigenvalues[i][j].imag()) + "i";
+                }
+            }
+            file << eigenStr << std::endl;
+        }
+        file.close();
+    }
+}
+
 // 単一サイズのテスト実行
 void RandomMatrixAnalysis::runSingleSizeTest(int n, int testIndex) {
     std::cout << "サイズ " << n << " のランダム行列テスト " << testIndex << " を実行中..." << std::endl;
@@ -727,9 +781,26 @@ void RandomMatrixAnalysis::runSingleSizeTest(int n, int testIndex) {
     // データディレクトリの作成
     system("mkdir -p data");
     system("mkdir -p data/eigen");
+    system("mkdir -p data/A");
+    system("mkdir -p data/B");
+    system("mkdir -p data/x");
 
     // ランダム行列の生成
     auto matrix = generateRandomMatrix(n);
+
+    // 右辺ベクトルの生成
+    auto b = generateRandomVector(n);
+
+    // 連立1次方程式の解を計算
+    auto x = LinearSolver::solveLU(matrix, b);
+
+    // 元の行列と右辺ベクトルを保存
+    std::string matrixAFilename = "data/A/" + std::to_string(n) + ".csv";
+    std::string vectorBFilename = "data/B/" + std::to_string(n) + ".csv";
+    std::string solutionXFilename = "data/x/" + std::to_string(n) + ".csv";
+    saveMatrixToCSV(matrix, matrixAFilename);
+    saveVectorToCSV(b, vectorBFilename);
+    saveVectorToCSV(x, solutionXFilename);
 
     // 計算開始時刻
     auto start = std::chrono::high_resolution_clock::now();
@@ -740,7 +811,7 @@ void RandomMatrixAnalysis::runSingleSizeTest(int n, int testIndex) {
     int rank = MatrixOperations::rank(matrix);
 
     // 全ての固有値・固有ベクトルの計算（QR法）
-    auto [allEigenvalues, allEigenvectors] = EigenvalueAnalysis::qrEigenDecomposition(matrix);
+    auto [eigenvalues, eigenvectors] = EigenvalueAnalysis::qrEigenDecomposition(matrix);
 
     // 計算終了時刻
     auto end = std::chrono::high_resolution_clock::now();
@@ -752,15 +823,15 @@ void RandomMatrixAnalysis::runSingleSizeTest(int n, int testIndex) {
 
     // 固有値の表示（最初の5個まで）
     std::cout << "固有値（最初の5個）:" << std::endl;
-    for (size_t i = 0; i < std::min(allEigenvalues.size(), size_t(5)); i++) {
-        if (std::abs(allEigenvalues[i].imag()) < 1e-10) {
-            std::cout << "  λ[" << i << "] = " << std::fixed << std::setprecision(6) << allEigenvalues[i].real() << std::endl;
+    for (size_t i = 0; i < std::min(eigenvalues.size(), size_t(5)); i++) {
+        if (std::abs(eigenvalues[i].imag()) < 1e-10) {
+            std::cout << "  λ[" << i << "] = " << std::fixed << std::setprecision(6) << eigenvalues[i].real() << std::endl;
         } else {
-            std::cout << "  λ[" << i << "] = " << std::fixed << std::setprecision(6) << allEigenvalues[i].real() << " + " << std::fixed << std::setprecision(6) << allEigenvalues[i].imag() << "i" << std::endl;
+            std::cout << "  λ[" << i << "] = " << std::fixed << std::setprecision(6) << eigenvalues[i].real() << " + " << std::fixed << std::setprecision(6) << eigenvalues[i].imag() << "i" << std::endl;
         }
     }
-    if (allEigenvalues.size() > 5) {
-        std::cout << "  ... (他 " << allEigenvalues.size() - 5 << " 個の固有値)" << std::endl;
+    if (eigenvalues.size() > 5) {
+        std::cout << "  ... (他 " << eigenvalues.size() - 5 << " 個の固有値)" << std::endl;
     }
     std::cout << std::endl;
 
@@ -782,9 +853,9 @@ void RandomMatrixAnalysis::runSingleSizeTest(int n, int testIndex) {
 
         // データ行（各固有値と対応する固有ベクトル）
         for (int i = 0; i < n; i++) {
-            eigenFile << i << "," << allEigenvalues[i].real() << "," << allEigenvalues[i].imag();
+            eigenFile << i << "," << eigenvalues[i].real() << "," << eigenvalues[i].imag();
             for (int j = 0; j < n; j++) {
-                eigenFile << "," << allEigenvectors[j][i]; // 列ベクトルとして保存
+                eigenFile << "," << eigenvectors[j][i]; // 列ベクトルとして保存
             }
             eigenFile << std::endl;
         }
@@ -799,6 +870,9 @@ void RandomMatrixAnalysis::runRandomMatrixTest(int maxSize, int numTests) {
     // データディレクトリの作成
     system("mkdir -p data");
     system("mkdir -p data/eigen");
+    system("mkdir -p data/A");
+    system("mkdir -p data/B");
+    system("mkdir -p data/x");
 
     std::vector<int> sizes;
     std::vector<double> determinants;
@@ -812,6 +886,20 @@ void RandomMatrixAnalysis::runRandomMatrixTest(int maxSize, int numTests) {
         for (int test = 0; test < numTests; test++) {
             // ランダム行列の生成
             auto matrix = generateRandomMatrix(n);
+
+            // 右辺ベクトルの生成
+            auto b = generateRandomVector(n);
+
+            // 連立1次方程式の解を計算
+            auto x = LinearSolver::solveLU(matrix, b);
+
+            // 元の行列と右辺ベクトルを保存
+            std::string matrixAFilename = "data/A/" + std::to_string(n) + ".csv";
+            std::string vectorBFilename = "data/B/" + std::to_string(n) + ".csv";
+            std::string solutionXFilename = "data/x/" + std::to_string(n) + ".csv";
+            saveMatrixToCSV(matrix, matrixAFilename);
+            saveVectorToCSV(b, vectorBFilename);
+            saveVectorToCSV(x, solutionXFilename);
 
             // 計算開始時刻
             auto start = std::chrono::high_resolution_clock::now();
@@ -868,10 +956,16 @@ void RandomMatrixAnalysis::runRandomMatrixTest(int maxSize, int numTests) {
 
     // 結果をCSVファイルに保存
     std::string resultsFilename = "data/random_matrix_results.csv";
-    saveResultsToCSV(resultsFilename, sizes, determinants, conditionNumbers, ranks, allEigenvalues, computationTimes);
+    std::string performanceFilename = "data/matrix_performance.csv";
+    std::string propertiesFilename = "data/matrix_properties.csv";
+
+    savePerformanceToCSV(resultsFilename, sizes, computationTimes, conditionNumbers);
+    saveMatrixPropertiesToCSV(propertiesFilename, sizes, determinants, ranks, allEigenvalues);
 
     std::cout << "\n=== テスト完了 ===" << std::endl;
-    std::cout << "結果を " << resultsFilename << " に保存しました。" << std::endl;
+    std::cout << "結果を以下のファイルに保存しました:" << std::endl;
+    std::cout << "  計算精度・時間: " << resultsFilename << std::endl;
+    std::cout << "  行列特性: " << propertiesFilename << std::endl;
 
     // 統計情報の表示
     if (!computationTimes.empty()) {
