@@ -101,9 +101,15 @@ int main() {
     std::cout << std::endl << "6. ランダム行列テスト" << std::endl;
     std::cout << "--------------------" << std::endl;
 
-    std::cout << "ランダム行列テスト (n=1~100) を実行します..." << std::endl;
+#ifdef DEBUG_MODE
+    int maxSize = 10;
+    std::cout << "デバッグモード: ランダム行列テスト (n=1~" << maxSize << ") を実行します..." << std::endl;
+#else
+    int maxSize = 100;
+    std::cout << "ランダム行列テスト (n=1~" << maxSize << ") を実行します..." << std::endl;
+#endif
     std::cout << "注意: このテストは時間がかかる場合があります。" << std::endl;
-    RandomMatrixAnalysis::runRandomMatrixTest(100, 1);
+    RandomMatrixAnalysis::runRandomMatrixTest(maxSize, 1);
 
     std::cout << std::endl << "=== テスト完了 ===" << std::endl;
     return 0;
