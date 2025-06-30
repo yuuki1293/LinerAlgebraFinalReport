@@ -1,24 +1,29 @@
 #include "../include/linear_algebra.hpp"
+#include <iostream>
 #include <iomanip>
 #include <algorithm>
 #include <numeric>
 #include <sstream>
 #include <limits>
 #include <random>
+#include <chrono>
+#include <fstream>
+#include <complex>
+#include <cmath>
 #include <set>
 
 namespace LinearAlgebra {
 
 // MatrixOperations クラスの実装
 void MatrixOperations::printMatrix(const std::vector<std::vector<double>>& matrix, const std::string& name) {
-    std::print("{}:\n", name);
+    std::cout << name << ":" << std::endl;
     for (const auto& row : matrix) {
         for (double val : row) {
-            std::print("{:10.4f}", val);
+            std::cout << std::fixed << std::setprecision(4) << std::setw(10) << val;
         }
-        std::print("\n");
+        std::cout << std::endl;
     }
-    std::print("\n");
+    std::cout << std::endl;
 }
 
 void MatrixOperations::saveMatrix(const std::vector<std::vector<double>>& matrix, const std::string& filename) {
@@ -245,7 +250,7 @@ std::vector<int> EigenvalueAnalysis::checkEigenvalueMultiplicity(const std::vect
 // 対角化可能性の判定
 bool EigenvalueAnalysis::isDiagonalizable(const std::vector<std::vector<double>>& matrix) {
     // まず固有値を計算
-    std::vector<std::complex<double>> eigenvalues = qrEigenvalues(matrix);
+    auto [eigenvalues, eigenvectors] = qrEigenDecomposition(matrix);
 
     // 固有値の重複度をチェック
     std::vector<int> multiplicities = checkEigenvalueMultiplicity(eigenvalues);
@@ -295,21 +300,22 @@ bool EigenvalueAnalysis::isDiagonalizable(const std::vector<std::vector<double>>
 
 // 対角化による固有値計算
 std::vector<std::complex<double>> EigenvalueAnalysis::diagonalizationEigenvalues(const std::vector<std::vector<double>>& matrix) {
-    std::print("対角化可能性をチェック中...\n");
+    std::cout << "対角化可能性をチェック中..." << std::endl;
 
     if (!isDiagonalizable(matrix)) {
-        std::print("エラー: この行列は対角化できません。\n");
-        std::print("理由: 固有値の重複度が高すぎるか、固有ベクトルが線形独立でない可能性があります。\n");
+        std::cout << "エラー: この行列は対角化できません。" << std::endl;
+        std::cout << "理由: 固有値の重複度が高すぎるか、固有ベクトルが線形独立でない可能性があります。" << std::endl;
 
         // NaNの固有値を返す
         int n = matrix.size();
         return std::vector<std::complex<double>>(n, std::complex<double>(std::numeric_limits<double>::quiet_NaN(), 0.0));
     }
 
-    std::print("行列は対角化可能です。対角化による固有値計算を実行します。\n");
+    std::cout << "行列は対角化可能です。対角化による固有値計算を実行します。" << std::endl;
 
     // QR法で固有値を計算（対角化可能な場合）
-    return qrEigenvalues(matrix);
+    auto [eigenvalues, eigenvectors] = qrEigenDecomposition(matrix);
+    return eigenvalues;
 }
 
 // べき乗法による最大固有値と固有ベクトルの計算
@@ -352,7 +358,7 @@ std::pair<double, std::vector<double>> EigenvalueAnalysis::powerMethod(const std
         if (std::abs(newEigenvalue - eigenvalue) < tolerance) {
             eigenvalue = newEigenvalue;
             eigenvector = x;
-            std::print("べき乗法が収束しました。反復回数: {}\n", iter + 1);
+            std::cout << "べき乗法が収束しました。反復回数: " << iter + 1 << std::endl;
             break;
         }
 
@@ -420,20 +426,20 @@ std::pair<std::vector<std::vector<double>>, std::vector<std::vector<double>>> Ei
     return std::make_pair(Q, R);
 }
 
-// QR法による固有値計算
-std::vector<std::complex<double>> EigenvalueAnalysis::qrEigenvalues(const std::vector<std::vector<double>>& matrix,
-                                                                   int maxIterations, double tolerance) {
+// QR法による固有値・固有ベクトル計算
+std::pair<std::vector<std::complex<double>>, std::vector<std::vector<double>>>
+EigenvalueAnalysis::qrEigenDecomposition(const std::vector<std::vector<double>>& matrix, int maxIterations, double tolerance) {
     int n = matrix.size();
     std::vector<std::vector<double>> A = MatrixOperations::copyMatrix(matrix);
+    std::vector<std::vector<double>> V = MatrixOperations::identity(n); // 固有ベクトル格納用
 
     for (int iter = 0; iter < maxIterations; iter++) {
         // QR分解
         auto [Q, R] = qrDecomposition(A);
-
-        // A = R * Q の更新
         A = MatrixOperations::matrixMultiply(R, Q);
+        V = MatrixOperations::matrixMultiply(V, Q); // 固有ベクトルの更新
 
-        // 収束判定（非対角要素が十分小さいかチェック）
+        // 収束判定
         bool converged = true;
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < n; j++) {
@@ -444,32 +450,26 @@ std::vector<std::complex<double>> EigenvalueAnalysis::qrEigenvalues(const std::v
             }
             if (!converged) break;
         }
-
-        if (converged) {
-            std::print("QR法が収束しました。反復回数: {}\n", iter + 1);
-            break;
-        }
+        if (converged) break;
     }
-
-    // 対角要素が固有値
     std::vector<std::complex<double>> eigenvalues;
     for (int i = 0; i < n; i++) {
         eigenvalues.push_back(std::complex<double>(A[i][i], 0.0));
     }
-
-    return eigenvalues;
+    // Vの各列が固有ベクトル
+    return {eigenvalues, V};
 }
 
 // 固有値分解（対角化による）
 void EigenvalueAnalysis::eigenvalueDecomposition(const std::vector<std::vector<double>>& matrix) {
-    std::print("=== 固有値分解（対角化による）===\n");
+    std::cout << "=== 固有値分解（対角化による）===" << std::endl;
 
     // 対角化による固有値計算
     std::vector<std::complex<double>> eigenvalues = diagonalizationEigenvalues(matrix);
 
     if (eigenvalues.empty() || isNaN(eigenvalues)) {
-        std::print("対角化できないため、固有値と固有ベクトルをNaNに設定します。\n");
-        std::print("理由: 固有値の重複度が高すぎるか、固有ベクトルが線形独立でない可能性があります。\n");
+        std::cout << "対角化できないため、固有値と固有ベクトルをNaNに設定します。" << std::endl;
+        std::cout << "理由: 固有値の重複度が高すぎるか、固有ベクトルが線形独立でない可能性があります。" << std::endl;
 
         // NaNの固有値と固有ベクトルを作成
         int n = matrix.size();
@@ -484,38 +484,38 @@ void EigenvalueAnalysis::eigenvalueDecomposition(const std::vector<std::vector<d
     printEigenvalues(eigenvalues, "対角化による固有値");
 
     // べき乗法による最大固有値の検証
-    std::print("\n=== べき乗法による検証 ===\n");
+    std::cout << "\n=== べき乗法による検証 ===" << std::endl;
     auto [maxEigenvalue, eigenvector] = powerMethod(matrix);
-    std::print("べき乗法による最大固有値: {}\n", maxEigenvalue);
+    std::cout << "べき乗法による最大固有値: " << maxEigenvalue << std::endl;
     printEigenvector(eigenvector, maxEigenvalue, "対応する固有ベクトル");
 }
 
 // 固有値の表示
 void EigenvalueAnalysis::printEigenvalues(const std::vector<std::complex<double>>& eigenvalues, const std::string& name) {
-    std::print("{}:\n", name);
+    std::cout << name << ":" << std::endl;
     for (size_t i = 0; i < eigenvalues.size(); i++) {
         if (isNaN(eigenvalues[i])) {
-            std::print("λ[{}] = NaN\n", i);
+            std::cout << "λ[" << i << "] = NaN" << std::endl;
         } else if (std::abs(eigenvalues[i].imag()) < 1e-10) {
-            std::print("λ[{}] = {:.6f}\n", i, eigenvalues[i].real());
+            std::cout << "λ[" << i << "] = " << std::fixed << std::setprecision(6) << eigenvalues[i].real() << std::endl;
         } else {
-            std::print("λ[{}] = {:.6f} + {:.6f}i\n", i, eigenvalues[i].real(), eigenvalues[i].imag());
+            std::cout << "λ[" << i << "] = " << std::fixed << std::setprecision(6) << eigenvalues[i].real() << " + " << std::fixed << std::setprecision(6) << eigenvalues[i].imag() << "i" << std::endl;
         }
     }
-    std::print("\n");
+    std::cout << std::endl;
 }
 
 // 固有ベクトルの表示
 void EigenvalueAnalysis::printEigenvector(const std::vector<double>& eigenvector, double eigenvalue, const std::string& name) {
-    std::print("{} (λ = {}):\n", name, eigenvalue);
+    std::cout << name << " (λ = " << eigenvalue << "):" << std::endl;
     for (size_t i = 0; i < eigenvector.size(); i++) {
         if (std::isnan(eigenvector[i])) {
-            std::print("v[{}] = NaN\n", i);
+            std::cout << "v[" << i << "] = NaN" << std::endl;
         } else {
-            std::print("v[{}] = {:.6f}\n", i, eigenvector[i]);
+            std::cout << "v[" << i << "] = " << std::fixed << std::setprecision(6) << eigenvector[i] << std::endl;
         }
     }
-    std::print("\n");
+    std::cout << std::endl;
 }
 
 // NaNチェック関数
@@ -617,9 +617,9 @@ void NumericalAnalysis::errorAnalysis(const std::vector<std::vector<double>>& A,
     exactNorm = std::sqrt(exactNorm);
     relativeError = maxError / exactNorm;
 
-    std::print("誤差解析結果:\n");
-    std::print("最大絶対誤差: {}\n", maxError);
-    std::print("相対誤差: {}\n", relativeError);
+    std::cout << "誤差解析結果:" << std::endl;
+    std::cout << "最大絶対誤差: " << maxError << std::endl;
+    std::cout << "相対誤差: " << relativeError << std::endl;
 }
 
 // RandomMatrixAnalysis クラスの実装
@@ -722,7 +722,11 @@ void RandomMatrixAnalysis::saveResultsToCSV(const std::string& filename,
 
 // 単一サイズのテスト実行
 void RandomMatrixAnalysis::runSingleSizeTest(int n, int testIndex) {
-    std::print("サイズ {} のランダム行列テスト {} を実行中...\n", n, testIndex);
+    std::cout << "サイズ " << n << " のランダム行列テスト " << testIndex << " を実行中..." << std::endl;
+
+    // データディレクトリの作成
+    system("mkdir -p data");
+    system("mkdir -p data/eigen");
 
     // ランダム行列の生成
     auto matrix = generateRandomMatrix(n);
@@ -735,8 +739,8 @@ void RandomMatrixAnalysis::runSingleSizeTest(int n, int testIndex) {
     double conditionNumber = MatrixOperations::conditionNumber(matrix);
     int rank = MatrixOperations::rank(matrix);
 
-    // 全ての固有値の計算（QR法）
-    auto allEigenvalues = EigenvalueAnalysis::qrEigenvalues(matrix);
+    // 全ての固有値・固有ベクトルの計算（QR法）
+    auto [allEigenvalues, allEigenvectors] = EigenvalueAnalysis::qrEigenDecomposition(matrix);
 
     // 計算終了時刻
     auto end = std::chrono::high_resolution_clock::now();
@@ -744,35 +748,45 @@ void RandomMatrixAnalysis::runSingleSizeTest(int n, int testIndex) {
     double computationTime = duration.count() / 1000.0; // ミリ秒に変換
 
     // 結果の表示
-    std::print("サイズ {}: 行列式={:.6f}, 条件数={:.6f}, ランク={}, 計算時間={:.3f}ms\n",
-               n, determinant, conditionNumber, rank, computationTime);
+    std::cout << "サイズ " << n << ": 行列式=" << std::fixed << std::setprecision(6) << determinant << ", 条件数=" << std::fixed << std::setprecision(6) << conditionNumber << ", ランク=" << rank << ", 計算時間=" << computationTime << "ms" << std::endl;
 
     // 固有値の表示（最初の5個まで）
-    std::print("固有値（最初の5個）:\n");
+    std::cout << "固有値（最初の5個）:" << std::endl;
     for (size_t i = 0; i < std::min(allEigenvalues.size(), size_t(5)); i++) {
         if (std::abs(allEigenvalues[i].imag()) < 1e-10) {
-            std::print("  λ[{}] = {:.6f}\n", i, allEigenvalues[i].real());
+            std::cout << "  λ[" << i << "] = " << std::fixed << std::setprecision(6) << allEigenvalues[i].real() << std::endl;
         } else {
-            std::print("  λ[{}] = {:.6f} + {:.6f}i\n", i, allEigenvalues[i].real(), allEigenvalues[i].imag());
+            std::cout << "  λ[" << i << "] = " << std::fixed << std::setprecision(6) << allEigenvalues[i].real() << " + " << std::fixed << std::setprecision(6) << allEigenvalues[i].imag() << "i" << std::endl;
         }
     }
     if (allEigenvalues.size() > 5) {
-        std::print("  ... (他 {} 個の固有値)\n", allEigenvalues.size() - 5);
+        std::cout << "  ... (他 " << allEigenvalues.size() - 5 << " 個の固有値)" << std::endl;
     }
-    std::print("\n");
+    std::cout << std::endl;
 
-    // 行列と固有値の保存
+    // 行列と固有値・固有ベクトルの保存
     std::string matrixFilename = "data/random_matrix_" + std::to_string(n) + "_" + std::to_string(testIndex) + ".csv";
-    std::string eigenvaluesFilename = "data/eigenvalues_" + std::to_string(n) + "_" + std::to_string(testIndex) + ".csv";
+    std::string eigenFilename = "data/eigen/eigen_" + std::to_string(n) + "_" + std::to_string(testIndex) + ".csv";
 
     saveMatrixToCSV(matrix, matrixFilename);
 
-    // 固有値をCSVファイルに保存
-    std::ofstream eigenFile(eigenvaluesFilename);
+    // 固有値と固有ベクトルをCSV保存（横に並べて）
+    std::ofstream eigenFile(eigenFilename);
     if (eigenFile.is_open()) {
-        eigenFile << "Index,Real,Imaginary" << std::endl;
-        for (size_t i = 0; i < allEigenvalues.size(); i++) {
-            eigenFile << i << "," << allEigenvalues[i].real() << "," << allEigenvalues[i].imag() << std::endl;
+        // ヘッダー行
+        eigenFile << "Index,Eigenvalue_Real,Eigenvalue_Imaginary";
+        for (int i = 0; i < n; i++) {
+            eigenFile << ",Eigenvector_" << i;
+        }
+        eigenFile << std::endl;
+
+        // データ行（各固有値と対応する固有ベクトル）
+        for (int i = 0; i < n; i++) {
+            eigenFile << i << "," << allEigenvalues[i].real() << "," << allEigenvalues[i].imag();
+            for (int j = 0; j < n; j++) {
+                eigenFile << "," << allEigenvectors[j][i]; // 列ベクトルとして保存
+            }
+            eigenFile << std::endl;
         }
         eigenFile.close();
     }
@@ -780,10 +794,11 @@ void RandomMatrixAnalysis::runSingleSizeTest(int n, int testIndex) {
 
 // n=1~100のランダム行列テスト実行
 void RandomMatrixAnalysis::runRandomMatrixTest(int maxSize, int numTests) {
-    std::print("=== ランダム行列テスト (n=1~{} 各サイズ{}回) ===\n", maxSize, numTests);
+    std::cout << "=== ランダム行列テスト (n=1~" << maxSize << " 各サイズ" << numTests << "回) ===" << std::endl;
 
     // データディレクトリの作成
     system("mkdir -p data");
+    system("mkdir -p data/eigen");
 
     std::vector<int> sizes;
     std::vector<double> determinants;
@@ -806,8 +821,8 @@ void RandomMatrixAnalysis::runRandomMatrixTest(int maxSize, int numTests) {
             double conditionNumber = MatrixOperations::conditionNumber(matrix);
             int rank = MatrixOperations::rank(matrix);
 
-            // 全ての固有値の計算（QR法）
-            auto eigenvalues = EigenvalueAnalysis::qrEigenvalues(matrix);
+            // 全ての固有値・固有ベクトルの計算（QR法）
+            auto [eigenvalues, eigenvectors] = EigenvalueAnalysis::qrEigenDecomposition(matrix);
 
             // 計算終了時刻
             auto end = std::chrono::high_resolution_clock::now();
@@ -822,9 +837,31 @@ void RandomMatrixAnalysis::runRandomMatrixTest(int maxSize, int numTests) {
             allEigenvalues.push_back(eigenvalues);
             computationTimes.push_back(computationTime);
 
+            // 固有値と固有ベクトルをCSV保存（横に並べて）
+            std::string eigenFilename = "data/eigen/eigen_" + std::to_string(n) + "_" + std::to_string(test) + ".csv";
+            std::ofstream eigenFile(eigenFilename);
+            if (eigenFile.is_open()) {
+                // ヘッダー行
+                eigenFile << "Index,Eigenvalue_Real,Eigenvalue_Imaginary";
+                for (int i = 0; i < n; i++) {
+                    eigenFile << ",Eigenvector_" << i;
+                }
+                eigenFile << std::endl;
+
+                // データ行（各固有値と対応する固有ベクトル）
+                for (int i = 0; i < n; i++) {
+                    eigenFile << i << "," << eigenvalues[i].real() << "," << eigenvalues[i].imag();
+                    for (int j = 0; j < n; j++) {
+                        eigenFile << "," << eigenvectors[j][i]; // 列ベクトルとして保存
+                    }
+                    eigenFile << std::endl;
+                }
+                eigenFile.close();
+            }
+
             // 進捗表示（10サイズごと）
             if (n % 10 == 0) {
-                std::print("サイズ {} 完了\n", n);
+                std::cout << "サイズ " << n << " 完了" << std::endl;
             }
         }
     }
@@ -833,8 +870,8 @@ void RandomMatrixAnalysis::runRandomMatrixTest(int maxSize, int numTests) {
     std::string resultsFilename = "data/random_matrix_results.csv";
     saveResultsToCSV(resultsFilename, sizes, determinants, conditionNumbers, ranks, allEigenvalues, computationTimes);
 
-    std::print("\n=== テスト完了 ===\n");
-    std::print("結果を {} に保存しました。\n", resultsFilename);
+    std::cout << "\n=== テスト完了 ===" << std::endl;
+    std::cout << "結果を " << resultsFilename << " に保存しました。" << std::endl;
 
     // 統計情報の表示
     if (!computationTimes.empty()) {
@@ -842,10 +879,10 @@ void RandomMatrixAnalysis::runRandomMatrixTest(int maxSize, int numTests) {
         double maxTime = *std::max_element(computationTimes.begin(), computationTimes.end());
         double minTime = *std::min_element(computationTimes.begin(), computationTimes.end());
 
-        std::print("計算時間統計:\n");
-        std::print("  平均: {:.3f}ms\n", avgTime);
-        std::print("  最大: {:.3f}ms\n", maxTime);
-        std::print("  最小: {:.3f}ms\n", minTime);
+        std::cout << "計算時間統計:" << std::endl;
+        std::cout << "  平均: " << avgTime << "ms" << std::endl;
+        std::cout << "  最大: " << maxTime << "ms" << std::endl;
+        std::cout << "  最小: " << minTime << "ms" << std::endl;
     }
 }
 

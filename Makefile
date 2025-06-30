@@ -2,7 +2,7 @@
 
 # コンパイラ設定
 CXX = g++
-CXXFLAGS = -std=c++26 -Wall -Wextra -O2 -I./include
+CXXFLAGS = -std=c++20 -Wall -Wextra -O2 -I./include
 LDFLAGS =
 
 # ディレクトリ設定

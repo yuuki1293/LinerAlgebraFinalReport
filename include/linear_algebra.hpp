@@ -7,7 +7,6 @@
 #include <cmath>
 #include <string>
 #include <complex>
-#include <print>
 #include <random>
 #include <chrono>
 
@@ -81,9 +80,10 @@ public:
     static std::pair<double, std::vector<double>> powerMethod(const std::vector<std::vector<double>>& matrix,
                                                              int maxIterations = 1000, double tolerance = 1e-6);
 
-    // QR法によるすべての固有値計算
-    static std::vector<std::complex<double>> qrEigenvalues(const std::vector<std::vector<double>>& matrix,
-                                                          int maxIterations = 1000, double tolerance = 1e-6);
+    // QR法による固有値・固有ベクトル計算
+    // 戻り値: pair(固有値リスト, 固有ベクトル行列)
+    static std::pair<std::vector<std::complex<double>>, std::vector<std::vector<double>>>
+    qrEigenDecomposition(const std::vector<std::vector<double>>& matrix, int maxIterations = 1000, double tolerance = 1e-8);
 
     // QR分解
     static std::pair<std::vector<std::vector<double>>, std::vector<std::vector<double>>> qrDecomposition(
