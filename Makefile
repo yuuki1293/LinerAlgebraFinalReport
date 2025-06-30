@@ -25,6 +25,11 @@ all: $(MAIN_TARGET)
 debug: CXXFLAGS = $(DEBUGFLAGS)
 debug: $(MAIN_TARGET)
 
+# デバッグ実行（強制的にデバッグビルド）
+debug-run: CXXFLAGS = $(DEBUGFLAGS)
+debug-run: clean $(MAIN_TARGET)
+	./$(MAIN_TARGET)
+
 # オブジェクトファイルの作成
 $(BUILDDIR)/%.o: $(SRCDIR)/%.cpp
 	@mkdir -p $(BUILDDIR)
@@ -35,11 +40,7 @@ $(MAIN_TARGET): $(OBJECTS)
 	$(CXX) $(OBJECTS) -o $@ $(LDFLAGS)
 
 # メインプログラムの実行
-run: $(MAIN_TARGET)
-	./$(MAIN_TARGET)
-
-# デバッグ実行
-debug-run: debug
+run: clean $(MAIN_TARGET)
 	./$(MAIN_TARGET)
 
 # クリーン
