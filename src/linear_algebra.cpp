@@ -597,31 +597,6 @@ double NumericalAnalysis::matrixNorm(const std::vector<std::vector<double>>& mat
     return 0.0;
 }
 
-void NumericalAnalysis::errorAnalysis(const std::vector<std::vector<double>>& A,
-                                     const std::vector<double>& b,
-                                     const std::vector<double>& x_exact,
-                                     const std::vector<double>& x_computed) {
-    int n = x_exact.size();
-
-    // 誤差の計算
-    double maxError = 0.0;
-    double relativeError = 0.0;
-    double exactNorm = 0.0;
-
-    for (int i = 0; i < n; i++) {
-        double error = std::abs(x_computed[i] - x_exact[i]);
-        maxError = std::max(maxError, error);
-        exactNorm += x_exact[i] * x_exact[i];
-    }
-
-    exactNorm = std::sqrt(exactNorm);
-    relativeError = maxError / exactNorm;
-
-    std::cout << "誤差解析結果:" << std::endl;
-    std::cout << "最大絶対誤差: " << maxError << std::endl;
-    std::cout << "相対誤差: " << relativeError << std::endl;
-}
-
 // RandomMatrixAnalysis クラスの実装
 
 // ランダム行列の生成
@@ -780,12 +755,7 @@ void RandomMatrixAnalysis::saveMatrixPropertiesToCSV(const std::string& filename
             std::string eigenStr = "";
             for (size_t j = 0; j < allEigenvalues[i].size(); j++) {
                 if (j > 0) eigenStr += ";";
-                if (std::abs(allEigenvalues[i][j].imag()) < 1e-10) {
-                    eigenStr += std::to_string(allEigenvalues[i][j].real());
-                } else {
-                    eigenStr += std::to_string(allEigenvalues[i][j].real()) + "+" +
-                               std::to_string(allEigenvalues[i][j].imag()) + "i";
-                }
+                eigenStr += std::to_string(allEigenvalues[i][j].real());
             }
             file << eigenStr << std::endl;
         }
@@ -872,11 +842,7 @@ void RandomMatrixAnalysis::runSingleSizeTest(int n, int testIndex) {
     // 固有値の表示（最初の5個まで）
     std::cout << "固有値（最初の5個）:" << std::endl;
     for (size_t i = 0; i < std::min(eigenvalues.size(), size_t(5)); i++) {
-        if (std::abs(eigenvalues[i].imag()) < 1e-10) {
-            std::cout << "  λ[" << i << "] = " << std::fixed << std::setprecision(6) << eigenvalues[i].real() << std::endl;
-        } else {
-            std::cout << "  λ[" << i << "] = " << std::fixed << std::setprecision(6) << eigenvalues[i].real() << " + " << std::fixed << std::setprecision(6) << eigenvalues[i].imag() << "i" << std::endl;
-        }
+        std::cout << "  λ[" << i << "] = " << std::fixed << std::setprecision(6) << eigenvalues[i].real() << std::endl;
     }
     if (eigenvalues.size() > 5) {
         std::cout << "  ... (他 " << eigenvalues.size() - 5 << " 個の固有値)" << std::endl;
@@ -893,7 +859,7 @@ void RandomMatrixAnalysis::runSingleSizeTest(int n, int testIndex) {
     std::ofstream eigenFile(eigenFilename);
     if (eigenFile.is_open()) {
         // ヘッダー行
-        eigenFile << "Index,Eigenvalue_Real,Eigenvalue_Imaginary";
+        eigenFile << "Index,Eigenvalue";
         for (int i = 0; i < n; i++) {
             eigenFile << ",Eigenvector_" << i;
         }
@@ -901,7 +867,7 @@ void RandomMatrixAnalysis::runSingleSizeTest(int n, int testIndex) {
 
         // データ行（各固有値と対応する固有ベクトル）
         for (int i = 0; i < n; i++) {
-            eigenFile << i << "," << eigenvalues[i].real() << "," << eigenvalues[i].imag();
+            eigenFile << i << "," << eigenvalues[i].real();
             for (int j = 0; j < n; j++) {
                 eigenFile << "," << eigenvectors[j][i]; // 列ベクトルとして保存
             }
@@ -1016,7 +982,7 @@ void RandomMatrixAnalysis::runRandomMatrixTest(int maxSize, int numTests) {
             std::ofstream eigenFile(eigenFilename);
             if (eigenFile.is_open()) {
                 // ヘッダー行
-                eigenFile << "Index,Eigenvalue_Real,Eigenvalue_Imaginary";
+                eigenFile << "Index,Eigenvalue";
                 for (int i = 0; i < n; i++) {
                     eigenFile << ",Eigenvector_" << i;
                 }
@@ -1024,7 +990,7 @@ void RandomMatrixAnalysis::runRandomMatrixTest(int maxSize, int numTests) {
 
                 // データ行（各固有値と対応する固有ベクトル）
                 for (int i = 0; i < n; i++) {
-                    eigenFile << i << "," << eigenvalues[i].real() << "," << eigenvalues[i].imag();
+                    eigenFile << i << "," << eigenvalues[i].real();
                     for (int j = 0; j < n; j++) {
                         eigenFile << "," << eigenvectors[j][i]; // 列ベクトルとして保存
                     }
