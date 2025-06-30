@@ -1,20 +1,83 @@
-# Ignore object files and executables
+# C++ ビルドファイル
+build/
 *.o
-*.out
+*.obj
 *.exe
+*.out
+*.app
 
-# Ignore build directories
-/build/
-/bin/
-/obj/
+# 実行ファイル
+main
+linear_algebra_test
 
-# Ignore dependency files
-*.d
+# コンパイラ生成ファイル
+*.gch
+*.pch
 
-# Ignore editor and system files
+# デバッグファイル
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# データファイル（必要に応じてコメントアウト）
+data/*.csv
+data/*.txt
+data/random_matrix_*.csv
+data/eigenvalues_*.csv
+data/eigenvector_*.csv
+
+# 図表ファイル
+figures/*.png
+figures/*.jpg
+figures/*.pdf
+figures/*.svg
+
+# レポートファイル
+report/*.pdf
+report/*.tex
+report/*.aux
+report/*.log
+report/*.out
+report/*.toc
+report/*.bbl
+report/*.blg
+report/*.fdb_latexmk
+report/*.fls
+report/*.synctex.gz
+
+# IDE設定ファイル
+.vscode/
+.idea/
 *.swp
 *.swo
-.DS_Store
-Thumbs.db
+*~
 
-.vscode
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+
+# ログファイル
+*.log
+
+# 一時ファイル
+*.tmp
+*.temp
+
+# バックアップファイル
+*.bak
+*.backup
+
+# 環境設定ファイル
+.env
+.env.local
+.env.*.local
