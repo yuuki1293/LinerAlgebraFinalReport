@@ -15,8 +15,8 @@
   - `data/B/` - 右辺ベクトルb（連立1次方程式Ax=b）
   - `data/x/` - 解ベクトルx（連立1次方程式Ax=bの解）
   - `data/eigen/` - 固有値・固有ベクトルCSVファイル
-  - `data/random_matrix_results.csv` - 計算時間・精度データ
-  - `data/matrix_properties.csv` - 行列特性データ
+  - `data/computation_times.csv` - 計算時間の統計データ
+  - `data/matrix_properties.csv` - 行列の数学的特性データ
   - `data/test_matrix.txt` - テスト用行列ファイル
 
 ## データフォルダ構造の詳細
@@ -48,8 +48,8 @@
   - QR法で計算
 
 ### 統計データファイル
-- **`data/random_matrix_results.csv`** - 計算時間・精度の統計データ
-  - サイズ、計算時間、条件数などの性能指標
+- **`data/computation_times.csv`** - 計算時間の統計データ
+  - サイズ、計算時間などの性能指標
   - 各サイズ・各テストの結果を記録
 
 - **`data/matrix_properties.csv`** - 行列の数学的特性データ
@@ -154,7 +154,8 @@ make help
    - デバッグモード：n=1~10のランダム行列を生成・解析
 
 ### 出力ファイル
-- `data/random_matrix_results.csv` - ランダム行列テストの結果
+- `data/computation_times.csv` - 計算時間の統計データ
+- `data/matrix_properties.csv` - 行列の数学的特性データ
 - `data/eigen/eigen_<n>_<test>.csv` - 各サイズnの固有値・固有ベクトル
 ## 進め方
 1. 課題の詳細を確認

@@ -180,8 +180,7 @@ public:
     // 計算精度・時間のCSV保存
     static void savePerformanceToCSV(const std::string& filename,
                                     const std::vector<int>& sizes,
-                                    const std::vector<double>& computationTimes,
-                                    const std::vector<double>& conditionNumbers);
+                                    const std::vector<double>& computationTimes);
 
     // 詳細計算時間のCSV保存
     static void saveDetailedTimesToCSV(const std::string& filename,

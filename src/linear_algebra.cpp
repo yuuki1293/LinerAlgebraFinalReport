@@ -743,19 +743,16 @@ void RandomMatrixAnalysis::saveDetailedTimesToCSV(const std::string& filename,
 
 // 計算精度・時間のCSV保存
 void RandomMatrixAnalysis::savePerformanceToCSV(const std::string& filename,
-                                               const std::vector<int>& sizes,
-                                               const std::vector<double>& computationTimes,
-                                               const std::vector<double>& conditionNumbers) {
+                                                const std::vector<int>& sizes,
+                                                const std::vector<double>& computationTimes) {
     std::ofstream file(filename);
     if (file.is_open()) {
         // ヘッダー行
-        file << "Size,ComputationTime(ms),ConditionNumber" << std::endl;
+        file << "Size,ComputationTime" << std::endl;
 
         // データ行
         for (size_t i = 0; i < sizes.size(); i++) {
-            file << sizes[i] << ","
-                 << computationTimes[i] << ","
-                 << conditionNumbers[i] << std::endl;
+            file << sizes[i] << "," << std::fixed << std::setprecision(6) << computationTimes[i] << std::endl;
         }
         file.close();
     }
@@ -1003,18 +1000,17 @@ void RandomMatrixAnalysis::runRandomMatrixTest(int maxSize, int numTests) {
     }
 
     // 結果をCSVファイルに保存
-    std::string resultsFilename = "data/random_matrix_results.csv";
-    std::string performanceFilename = "data/matrix_performance.csv";
+    std::string resultsFilename = "data/computation_times.csv";
     std::string propertiesFilename = "data/matrix_properties.csv";
     std::string detailedTimesFilename = "data/detailed_computation_times.csv";
 
-    savePerformanceToCSV(resultsFilename, sizes, computationTimes, conditionNumbers);
+    savePerformanceToCSV(resultsFilename, sizes, computationTimes);
     saveMatrixPropertiesToCSV(propertiesFilename, sizes, determinants, ranks, allEigenvalues);
     saveDetailedTimesToCSV(detailedTimesFilename, sizes, detailedTimes);
 
     std::cout << "\n=== テスト完了 ===" << std::endl;
     std::cout << "結果を以下のファイルに保存しました:" << std::endl;
-    std::cout << "  計算精度・時間: " << resultsFilename << std::endl;
+    std::cout << "  計算時間: " << resultsFilename << std::endl;
     std::cout << "  行列特性: " << propertiesFilename << std::endl;
     std::cout << "  詳細計算時間: " << detailedTimesFilename << std::endl;
 
