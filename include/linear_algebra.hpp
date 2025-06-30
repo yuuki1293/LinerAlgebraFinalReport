@@ -10,6 +10,19 @@
 #include <random>
 #include <chrono>
 
+// 計算時間を各項目ごとに記録する構造体
+struct ComputationTimes {
+    double determinantTime = 0.0;      // 行列式計算時間
+    double eigenvalueTime = 0.0;       // 固有値・固有ベクトル計算時間
+    double linearSolverTime = 0.0;     // 線形方程式解法時間
+    double totalTime = 0.0;            // 総計算時間
+
+    // 合計時間を計算
+    void calculateTotal() {
+        totalTime = determinantTime + eigenvalueTime + linearSolverTime;
+    }
+};
+
 // Eigenライブラリのインクルード（インストールが必要）
 #ifdef EIGEN_AVAILABLE
 #include <Eigen/Dense>
@@ -169,6 +182,11 @@ public:
                                     const std::vector<int>& sizes,
                                     const std::vector<double>& computationTimes,
                                     const std::vector<double>& conditionNumbers);
+
+    // 詳細計算時間のCSV保存
+    static void saveDetailedTimesToCSV(const std::string& filename,
+                                       const std::vector<int>& sizes,
+                                       const std::vector<ComputationTimes>& times);
 
     // 行列特性のCSV保存
     static void saveMatrixPropertiesToCSV(const std::string& filename,

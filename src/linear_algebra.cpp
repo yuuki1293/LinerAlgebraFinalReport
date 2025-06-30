@@ -720,6 +720,27 @@ void RandomMatrixAnalysis::saveResultsToCSV(const std::string& filename,
     }
 }
 
+// 詳細計算時間のCSV保存
+void RandomMatrixAnalysis::saveDetailedTimesToCSV(const std::string& filename,
+                                                  const std::vector<int>& sizes,
+                                                  const std::vector<ComputationTimes>& times) {
+    std::ofstream file(filename);
+    if (file.is_open()) {
+        // ヘッダー行
+        file << "Size,DeterminantTime,EigenvalueTime,LinearSolverTime,TotalTime" << std::endl;
+
+        // データ行
+        for (size_t i = 0; i < sizes.size(); i++) {
+            file << sizes[i] << ","
+                 << std::fixed << std::setprecision(6) << times[i].determinantTime << ","
+                 << std::fixed << std::setprecision(6) << times[i].eigenvalueTime << ","
+                 << std::fixed << std::setprecision(6) << times[i].linearSolverTime << ","
+                 << std::fixed << std::setprecision(6) << times[i].totalTime << std::endl;
+        }
+        file.close();
+    }
+}
+
 // 計算精度・時間のCSV保存
 void RandomMatrixAnalysis::savePerformanceToCSV(const std::string& filename,
                                                const std::vector<int>& sizes,
@@ -791,8 +812,12 @@ void RandomMatrixAnalysis::runSingleSizeTest(int n, int testIndex) {
     // 右辺ベクトルの生成
     auto b = generateRandomVector(n);
 
-    // 連立1次方程式の解を計算
+    // 連立1次方程式の解を計算（時間測定）
+    auto linearSolverStart = std::chrono::high_resolution_clock::now();
     auto x = LinearSolver::solveLU(matrix, b);
+    auto linearSolverEnd = std::chrono::high_resolution_clock::now();
+    auto linearSolverDuration = std::chrono::duration_cast<std::chrono::microseconds>(linearSolverEnd - linearSolverStart);
+    double linearSolverTime = linearSolverDuration.count() / 1000.0;
 
     // 元の行列と右辺ベクトルを保存
     std::string matrixAFilename = "data/A/" + std::to_string(n) + ".csv";
@@ -802,24 +827,29 @@ void RandomMatrixAnalysis::runSingleSizeTest(int n, int testIndex) {
     saveVectorToCSV(b, vectorBFilename);
     saveVectorToCSV(x, solutionXFilename);
 
-    // 計算開始時刻
-    auto start = std::chrono::high_resolution_clock::now();
-
-    // 各種計算
+    // 行列式計算（時間測定）
+    auto detStart = std::chrono::high_resolution_clock::now();
     double determinant = MatrixOperations::determinant(matrix);
+    auto detEnd = std::chrono::high_resolution_clock::now();
+    auto detDuration = std::chrono::duration_cast<std::chrono::microseconds>(detEnd - detStart);
+    double determinantTime = detDuration.count() / 1000.0;
+
+    // 条件数とランク計算
     double conditionNumber = MatrixOperations::conditionNumber(matrix);
     int rank = MatrixOperations::rank(matrix);
 
-    // 全ての固有値・固有ベクトルの計算（QR法）
+    // 固有値・固有ベクトル計算（時間測定）
+    auto eigenStart = std::chrono::high_resolution_clock::now();
     auto [eigenvalues, eigenvectors] = EigenvalueAnalysis::qrEigenDecomposition(matrix);
+    auto eigenEnd = std::chrono::high_resolution_clock::now();
+    auto eigenDuration = std::chrono::duration_cast<std::chrono::microseconds>(eigenEnd - eigenStart);
+    double eigenvalueTime = eigenDuration.count() / 1000.0;
 
-    // 計算終了時刻
-    auto end = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-    double computationTime = duration.count() / 1000.0; // ミリ秒に変換
+    // 総計算時間
+    double totalTime = determinantTime + eigenvalueTime + linearSolverTime;
 
     // 結果の表示
-    std::cout << "サイズ " << n << ": 行列式=" << std::fixed << std::setprecision(6) << determinant << ", 条件数=" << std::fixed << std::setprecision(6) << conditionNumber << ", ランク=" << rank << ", 計算時間=" << computationTime << "ms" << std::endl;
+    std::cout << "サイズ " << n << ": 行列式=" << std::fixed << std::setprecision(6) << determinant << ", 条件数=" << std::fixed << std::setprecision(6) << conditionNumber << ", ランク=" << rank << ", 計算時間=" << totalTime << "ms" << std::endl;
 
     // 固有値の表示（最初の5個まで）
     std::cout << "固有値（最初の5個）:" << std::endl;
@@ -880,6 +910,7 @@ void RandomMatrixAnalysis::runRandomMatrixTest(int maxSize, int numTests) {
     std::vector<int> ranks;
     std::vector<std::vector<std::complex<double>>> allEigenvalues;
     std::vector<double> computationTimes;
+    std::vector<ComputationTimes> detailedTimes;
 
     // 各サイズでテスト実行
     for (int n = 1; n <= maxSize; n++) {
@@ -890,8 +921,12 @@ void RandomMatrixAnalysis::runRandomMatrixTest(int maxSize, int numTests) {
             // 右辺ベクトルの生成
             auto b = generateRandomVector(n);
 
-            // 連立1次方程式の解を計算
+            // 連立1次方程式の解を計算（時間測定）
+            auto linearSolverStart = std::chrono::high_resolution_clock::now();
             auto x = LinearSolver::solveLU(matrix, b);
+            auto linearSolverEnd = std::chrono::high_resolution_clock::now();
+            auto linearSolverDuration = std::chrono::duration_cast<std::chrono::microseconds>(linearSolverEnd - linearSolverStart);
+            double linearSolverTime = linearSolverDuration.count() / 1000.0;
 
             // 元の行列と右辺ベクトルを保存
             std::string matrixAFilename = "data/A/" + std::to_string(n) + ".csv";
@@ -901,21 +936,33 @@ void RandomMatrixAnalysis::runRandomMatrixTest(int maxSize, int numTests) {
             saveVectorToCSV(b, vectorBFilename);
             saveVectorToCSV(x, solutionXFilename);
 
-            // 計算開始時刻
-            auto start = std::chrono::high_resolution_clock::now();
-
-            // 各種計算
+            // 行列式計算（時間測定）
+            auto detStart = std::chrono::high_resolution_clock::now();
             double determinant = MatrixOperations::determinant(matrix);
+            auto detEnd = std::chrono::high_resolution_clock::now();
+            auto detDuration = std::chrono::duration_cast<std::chrono::microseconds>(detEnd - detStart);
+            double determinantTime = detDuration.count() / 1000.0;
+
+            // 条件数とランク計算
             double conditionNumber = MatrixOperations::conditionNumber(matrix);
             int rank = MatrixOperations::rank(matrix);
 
-            // 全ての固有値・固有ベクトルの計算（QR法）
+            // 固有値・固有ベクトル計算（時間測定）
+            auto eigenStart = std::chrono::high_resolution_clock::now();
             auto [eigenvalues, eigenvectors] = EigenvalueAnalysis::qrEigenDecomposition(matrix);
+            auto eigenEnd = std::chrono::high_resolution_clock::now();
+            auto eigenDuration = std::chrono::duration_cast<std::chrono::microseconds>(eigenEnd - eigenStart);
+            double eigenvalueTime = eigenDuration.count() / 1000.0;
 
-            // 計算終了時刻
-            auto end = std::chrono::high_resolution_clock::now();
-            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-            double computationTime = duration.count() / 1000.0; // ミリ秒に変換
+            // 総計算時間
+            double totalTime = determinantTime + eigenvalueTime + linearSolverTime;
+
+            // 詳細時間を記録
+            ComputationTimes times;
+            times.determinantTime = determinantTime;
+            times.eigenvalueTime = eigenvalueTime;
+            times.linearSolverTime = linearSolverTime;
+            times.totalTime = totalTime;
 
             // 結果を保存
             sizes.push_back(n);
@@ -923,7 +970,8 @@ void RandomMatrixAnalysis::runRandomMatrixTest(int maxSize, int numTests) {
             conditionNumbers.push_back(conditionNumber);
             ranks.push_back(rank);
             allEigenvalues.push_back(eigenvalues);
-            computationTimes.push_back(computationTime);
+            computationTimes.push_back(totalTime);
+            detailedTimes.push_back(times);
 
             // 固有値と固有ベクトルをCSV保存（横に並べて）
             std::string eigenFilename = "data/eigen/eigen_" + std::to_string(n) + "_" + std::to_string(test) + ".csv";
@@ -958,14 +1006,17 @@ void RandomMatrixAnalysis::runRandomMatrixTest(int maxSize, int numTests) {
     std::string resultsFilename = "data/random_matrix_results.csv";
     std::string performanceFilename = "data/matrix_performance.csv";
     std::string propertiesFilename = "data/matrix_properties.csv";
+    std::string detailedTimesFilename = "data/detailed_computation_times.csv";
 
     savePerformanceToCSV(resultsFilename, sizes, computationTimes, conditionNumbers);
     saveMatrixPropertiesToCSV(propertiesFilename, sizes, determinants, ranks, allEigenvalues);
+    saveDetailedTimesToCSV(detailedTimesFilename, sizes, detailedTimes);
 
     std::cout << "\n=== テスト完了 ===" << std::endl;
     std::cout << "結果を以下のファイルに保存しました:" << std::endl;
     std::cout << "  計算精度・時間: " << resultsFilename << std::endl;
     std::cout << "  行列特性: " << propertiesFilename << std::endl;
+    std::cout << "  詳細計算時間: " << detailedTimesFilename << std::endl;
 
     // 統計情報の表示
     if (!computationTimes.empty()) {
