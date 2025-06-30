@@ -703,6 +703,60 @@ void RandomMatrixAnalysis::saveDetailedTimesToCSV(const std::string& filename,
     }
 }
 
+// 行列式計算時間のCSV保存
+void RandomMatrixAnalysis::saveDeterminantTimesToCSV(const std::string& filename,
+                                                    const std::vector<int>& sizes,
+                                                    const std::vector<ComputationTimes>& times) {
+    std::ofstream file(filename);
+    if (file.is_open()) {
+        // ヘッダー行
+        file << "Size,DeterminantTime" << std::endl;
+
+        // データ行
+        for (size_t i = 0; i < sizes.size(); i++) {
+            file << sizes[i] << ","
+                 << std::fixed << std::setprecision(6) << times[i].determinantTime << std::endl;
+        }
+        file.close();
+    }
+}
+
+// 固有値・固有ベクトル計算時間のCSV保存
+void RandomMatrixAnalysis::saveEigenvalueTimesToCSV(const std::string& filename,
+                                                   const std::vector<int>& sizes,
+                                                   const std::vector<ComputationTimes>& times) {
+    std::ofstream file(filename);
+    if (file.is_open()) {
+        // ヘッダー行
+        file << "Size,EigenvalueTime" << std::endl;
+
+        // データ行
+        for (size_t i = 0; i < sizes.size(); i++) {
+            file << sizes[i] << ","
+                 << std::fixed << std::setprecision(6) << times[i].eigenvalueTime << std::endl;
+        }
+        file.close();
+    }
+}
+
+// 線形方程式解法時間のCSV保存
+void RandomMatrixAnalysis::saveLinearSolverTimesToCSV(const std::string& filename,
+                                                     const std::vector<int>& sizes,
+                                                     const std::vector<ComputationTimes>& times) {
+    std::ofstream file(filename);
+    if (file.is_open()) {
+        // ヘッダー行
+        file << "Size,LinearSolverTime" << std::endl;
+
+        // データ行
+        for (size_t i = 0; i < sizes.size(); i++) {
+            file << sizes[i] << ","
+                 << std::fixed << std::setprecision(6) << times[i].linearSolverTime << std::endl;
+        }
+        file.close();
+    }
+}
+
 // 行列特性のCSV保存
 void RandomMatrixAnalysis::saveMatrixPropertiesToCSV(const std::string& filename,
                                                     const std::vector<int>& sizes,
@@ -947,14 +1001,23 @@ void RandomMatrixAnalysis::runRandomMatrixTest(int maxSize, int numTests) {
     // 結果をCSVファイルに保存
     std::string propertiesFilename = "data/matrix_properties.csv";
     std::string detailedTimesFilename = "data/detailed_computation_times.csv";
+    std::string determinantTimesFilename = "data/determinant_times.csv";
+    std::string eigenvalueTimesFilename = "data/eigenvalue_times.csv";
+    std::string linearSolverTimesFilename = "data/linear_solver_times.csv";
 
     saveMatrixPropertiesToCSV(propertiesFilename, sizes, determinants, ranks, allEigenvalues);
     saveDetailedTimesToCSV(detailedTimesFilename, sizes, detailedTimes);
+    saveDeterminantTimesToCSV(determinantTimesFilename, sizes, detailedTimes);
+    saveEigenvalueTimesToCSV(eigenvalueTimesFilename, sizes, detailedTimes);
+    saveLinearSolverTimesToCSV(linearSolverTimesFilename, sizes, detailedTimes);
 
     std::cout << "\n=== テスト完了 ===" << std::endl;
     std::cout << "結果を以下のファイルに保存しました:" << std::endl;
     std::cout << "  行列特性: " << propertiesFilename << std::endl;
     std::cout << "  詳細計算時間: " << detailedTimesFilename << std::endl;
+    std::cout << "  行列式計算時間: " << determinantTimesFilename << std::endl;
+    std::cout << "  固有値・固有ベクトル計算時間: " << eigenvalueTimesFilename << std::endl;
+    std::cout << "  線形方程式解法時間: " << linearSolverTimesFilename << std::endl;
 
     // 統計情報の表示
     if (!computationTimes.empty()) {

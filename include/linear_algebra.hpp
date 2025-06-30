@@ -176,6 +176,19 @@ public:
                                        const std::vector<int>& sizes,
                                        const std::vector<ComputationTimes>& times);
 
+    // 各計算時間を別々のファイルに保存
+    static void saveDeterminantTimesToCSV(const std::string& filename,
+                                         const std::vector<int>& sizes,
+                                         const std::vector<ComputationTimes>& times);
+
+    static void saveEigenvalueTimesToCSV(const std::string& filename,
+                                        const std::vector<int>& sizes,
+                                        const std::vector<ComputationTimes>& times);
+
+    static void saveLinearSolverTimesToCSV(const std::string& filename,
+                                          const std::vector<int>& sizes,
+                                          const std::vector<ComputationTimes>& times);
+
     // 行列特性のCSV保存
     static void saveMatrixPropertiesToCSV(const std::string& filename,
                                          const std::vector<int>& sizes,
