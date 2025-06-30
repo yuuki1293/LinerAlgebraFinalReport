@@ -61,8 +61,8 @@ std::vector<std::vector<double>> MatrixOperations::loadMatrix(const std::string&
 }
 
 double MatrixOperations::conditionNumber(const std::vector<std::vector<double>>& matrix) {
-    // 簡単な条件数の計算（最大固有値 / 最小固有値）
-    // 実際の実装ではより複雑な計算が必要
+    // 簡易な条件数の計算（最大値 / 最小値）
+    // より正確な計算は固有値から行うため、ここでは簡易計算のみ
     double maxVal = 0.0, minVal = std::numeric_limits<double>::max();
 
     for (const auto& row : matrix) {
@@ -72,7 +72,7 @@ double MatrixOperations::conditionNumber(const std::vector<std::vector<double>>&
         }
     }
 
-    return (minVal > 0) ? maxVal / minVal : std::numeric_limits<double>::infinity();
+    return (minVal > 1e-10) ? maxVal / minVal : std::numeric_limits<double>::infinity();
 }
 
 int MatrixOperations::rank(const std::vector<std::vector<double>>& matrix) {
@@ -762,17 +762,19 @@ void RandomMatrixAnalysis::saveMatrixPropertiesToCSV(const std::string& filename
                                                     const std::vector<int>& sizes,
                                                     const std::vector<double>& determinants,
                                                     const std::vector<int>& ranks,
+                                                    const std::vector<double>& conditionNumbers,
                                                     const std::vector<std::vector<std::complex<double>>>& allEigenvalues) {
     std::ofstream file(filename);
     if (file.is_open()) {
         // ヘッダー行
-        file << "Size,Determinant,Rank,Eigenvalues" << std::endl;
+        file << "Size,Determinant,Rank,ConditionNumber,Eigenvalues" << std::endl;
 
         // データ行
         for (size_t i = 0; i < sizes.size(); i++) {
             file << sizes[i] << ","
                  << determinants[i] << ","
-                 << ranks[i] << ",";
+                 << ranks[i] << ","
+                 << std::fixed << std::setprecision(6) << conditionNumbers[i] << ",";
 
             // 固有値を文字列として保存
             std::string eigenStr = "";
@@ -831,7 +833,6 @@ void RandomMatrixAnalysis::runSingleSizeTest(int n, int testIndex) {
     double determinantTime = detDuration.count() / 1000.0;
 
     // 条件数とランク計算
-    double conditionNumber = MatrixOperations::conditionNumber(matrix);
     int rank = MatrixOperations::rank(matrix);
 
     // 固有値・固有ベクトル計算（時間測定）
@@ -840,6 +841,27 @@ void RandomMatrixAnalysis::runSingleSizeTest(int n, int testIndex) {
     auto eigenEnd = std::chrono::high_resolution_clock::now();
     auto eigenDuration = std::chrono::duration_cast<std::chrono::microseconds>(eigenEnd - eigenStart);
     double eigenvalueTime = eigenDuration.count() / 1000.0;
+
+    // 条件数計算（固有値から計算）
+    double conditionNumber = 0.0;
+    if (!eigenvalues.empty()) {
+        double maxEigenvalue = 0.0;
+        double minEigenvalue = std::numeric_limits<double>::max();
+
+        for (const auto& eigenval : eigenvalues) {
+            double absVal = std::abs(eigenval.real());
+            if (absVal > 1e-10) {  // ゼロに近い値は除外
+                maxEigenvalue = std::max(maxEigenvalue, absVal);
+                minEigenvalue = std::min(minEigenvalue, absVal);
+            }
+        }
+
+        if (minEigenvalue > 1e-10) {
+            conditionNumber = maxEigenvalue / minEigenvalue;
+        } else {
+            conditionNumber = std::numeric_limits<double>::infinity();
+        }
+    }
 
     // 総計算時間
     double totalTime = determinantTime + eigenvalueTime + linearSolverTime;
@@ -940,7 +962,6 @@ void RandomMatrixAnalysis::runRandomMatrixTest(int maxSize, int numTests) {
             double determinantTime = detDuration.count() / 1000.0;
 
             // 条件数とランク計算
-            double conditionNumber = MatrixOperations::conditionNumber(matrix);
             int rank = MatrixOperations::rank(matrix);
 
             // 固有値・固有ベクトル計算（時間測定）
@@ -949,6 +970,27 @@ void RandomMatrixAnalysis::runRandomMatrixTest(int maxSize, int numTests) {
             auto eigenEnd = std::chrono::high_resolution_clock::now();
             auto eigenDuration = std::chrono::duration_cast<std::chrono::microseconds>(eigenEnd - eigenStart);
             double eigenvalueTime = eigenDuration.count() / 1000.0;
+
+            // 条件数計算（固有値から計算）
+            double conditionNumber = 0.0;
+            if (!eigenvalues.empty()) {
+                double maxEigenvalue = 0.0;
+                double minEigenvalue = std::numeric_limits<double>::max();
+
+                for (const auto& eigenval : eigenvalues) {
+                    double absVal = std::abs(eigenval.real());
+                    if (absVal > 1e-10) {  // ゼロに近い値は除外
+                        maxEigenvalue = std::max(maxEigenvalue, absVal);
+                        minEigenvalue = std::min(minEigenvalue, absVal);
+                    }
+                }
+
+                if (minEigenvalue > 1e-10) {
+                    conditionNumber = maxEigenvalue / minEigenvalue;
+                } else {
+                    conditionNumber = std::numeric_limits<double>::infinity();
+                }
+            }
 
             // 総計算時間
             double totalTime = determinantTime + eigenvalueTime + linearSolverTime;
@@ -1005,7 +1047,7 @@ void RandomMatrixAnalysis::runRandomMatrixTest(int maxSize, int numTests) {
     std::string eigenvalueTimesFilename = "data/eigenvalue_times.csv";
     std::string linearSolverTimesFilename = "data/linear_solver_times.csv";
 
-    saveMatrixPropertiesToCSV(propertiesFilename, sizes, determinants, ranks, allEigenvalues);
+    saveMatrixPropertiesToCSV(propertiesFilename, sizes, determinants, ranks, conditionNumbers, allEigenvalues);
     saveDetailedTimesToCSV(detailedTimesFilename, sizes, detailedTimes);
     saveDeterminantTimesToCSV(determinantTimesFilename, sizes, detailedTimes);
     saveEigenvalueTimesToCSV(eigenvalueTimesFilename, sizes, detailedTimes);

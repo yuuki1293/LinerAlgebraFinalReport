@@ -14,30 +14,41 @@ INCLUDEDIR = include
 # ソースファイル
 SOURCES = $(SRCDIR)/linear_algebra.cpp $(SRCDIR)/main.cpp
 OBJECTS = $(SOURCES:$(SRCDIR)/%.cpp=$(BUILDDIR)/%.o)
+DEBUG_OBJECTS = $(SOURCES:$(SRCDIR)/%.cpp=$(BUILDDIR)/%-debug.o)
 
 # メインプログラム
 MAIN_TARGET = $(BUILDDIR)/main
+DEBUG_TARGET = $(BUILDDIR)/main-debug
 
 # デフォルトターゲット
 all: $(MAIN_TARGET)
 
 # デバッグビルド
 debug: CXXFLAGS = $(DEBUGFLAGS)
-debug: $(MAIN_TARGET)
+debug: $(DEBUG_TARGET)
 
 # デバッグ実行（強制的にデバッグビルド）
 debug-run: CXXFLAGS = $(DEBUGFLAGS)
-debug-run: $(MAIN_TARGET)
-	./$(MAIN_TARGET)
+debug-run: $(DEBUG_TARGET)
+	./$(DEBUG_TARGET)
 
 # オブジェクトファイルの作成
 $(BUILDDIR)/%.o: $(SRCDIR)/%.cpp
 	@mkdir -p $(BUILDDIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
+# デバッグオブジェクトファイルの作成
+$(BUILDDIR)/%-debug.o: $(SRCDIR)/%.cpp
+	@mkdir -p $(BUILDDIR)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
 # メインプログラムの作成
 $(MAIN_TARGET): $(OBJECTS)
 	$(CXX) $(OBJECTS) -o $@ $(LDFLAGS)
+
+# デバッグメインプログラムの作成
+$(DEBUG_TARGET): $(DEBUG_OBJECTS)
+	$(CXX) $(DEBUG_OBJECTS) -o $@ $(LDFLAGS)
 
 # メインプログラムの実行
 run: $(MAIN_TARGET)

@@ -194,6 +194,7 @@ public:
                                          const std::vector<int>& sizes,
                                          const std::vector<double>& determinants,
                                          const std::vector<int>& ranks,
+                                         const std::vector<double>& conditionNumbers,
                                          const std::vector<std::vector<std::complex<double>>>& allEigenvalues);
 
     // n=1~100のランダム行列テスト実行
