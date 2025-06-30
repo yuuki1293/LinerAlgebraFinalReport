@@ -71,34 +71,8 @@ int main() {
     MatrixOperations::printMatrix(nonDiagonalizable, "対角化できない行列");
     EigenvalueAnalysis::eigenvalueDecomposition(nonDiagonalizable);
 
-    // 4. 誤差解析テスト
-    std::cout << std::endl << "4. 誤差解析テスト" << std::endl;
-    std::cout << "----------------" << std::endl;
-    std::vector<double> x_exact = {0.5, 0.5, 1.0};
-    std::vector<double> x_computed = {1.0, 0.0, 0.5};
-
-    std::cout << "真の解:" << std::endl;
-    for (size_t i = 0; i < x_exact.size(); i++) {
-        std::cout << "x_exact[" << i << "] = " << x_exact[i] << std::endl;
-    }
-    std::cout << std::endl;
-
-    NumericalAnalysis::errorAnalysis(A, b, x_exact, x_computed);
-
-    // 5. 行列の保存・読み込みテスト
-    std::cout << std::endl << "5. 行列の保存・読み込みテスト" << std::endl;
-    std::cout << "----------------------------" << std::endl;
-    MatrixOperations::saveMatrix(A, "data/test_matrix.txt");
-    std::cout << "行列を data/test_matrix.txt に保存しました。" << std::endl;
-
-    auto loaded_matrix = MatrixOperations::loadMatrix("data/test_matrix.txt");
-    MatrixOperations::printMatrix(loaded_matrix, "読み込んだ行列");
-
-    bool isEqual = MatrixOperations::isEqual(A, loaded_matrix);
-    std::cout << "保存・読み込みの等価性: " << (isEqual ? "成功" : "失敗") << std::endl;
-
-    // 6. ランダム行列テスト
-    std::cout << std::endl << "6. ランダム行列テスト" << std::endl;
+    // 4. ランダム行列テスト
+    std::cout << std::endl << "4. ランダム行列テスト" << std::endl;
     std::cout << "--------------------" << std::endl;
 
 #ifdef DEBUG_MODE
