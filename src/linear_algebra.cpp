@@ -682,44 +682,6 @@ void RandomMatrixAnalysis::saveVectorToCSV(const std::vector<double>& vector, co
     }
 }
 
-// 結果のCSV保存
-void RandomMatrixAnalysis::saveResultsToCSV(const std::string& filename,
-                                           const std::vector<int>& sizes,
-                                           const std::vector<double>& determinants,
-                                           const std::vector<double>& conditionNumbers,
-                                           const std::vector<int>& ranks,
-                                           const std::vector<std::vector<std::complex<double>>>& allEigenvalues,
-                                           const std::vector<double>& computationTimes) {
-    std::ofstream file(filename);
-    if (file.is_open()) {
-        // ヘッダー行
-        file << "Size,Determinant,ConditionNumber,Rank,ComputationTime(ms),Eigenvalues" << std::endl;
-
-        // データ行
-        for (size_t i = 0; i < sizes.size(); i++) {
-            file << sizes[i] << ","
-                 << determinants[i] << ","
-                 << conditionNumbers[i] << ","
-                 << ranks[i] << ","
-                 << computationTimes[i] << ",";
-
-            // 固有値を文字列として保存
-            std::string eigenStr = "";
-            for (size_t j = 0; j < allEigenvalues[i].size(); j++) {
-                if (j > 0) eigenStr += ";";
-                if (std::abs(allEigenvalues[i][j].imag()) < 1e-10) {
-                    eigenStr += std::to_string(allEigenvalues[i][j].real());
-                } else {
-                    eigenStr += std::to_string(allEigenvalues[i][j].real()) + "+" +
-                               std::to_string(allEigenvalues[i][j].imag()) + "i";
-                }
-            }
-            file << eigenStr << std::endl;
-        }
-        file.close();
-    }
-}
-
 // 詳細計算時間のCSV保存
 void RandomMatrixAnalysis::saveDetailedTimesToCSV(const std::string& filename,
                                                   const std::vector<int>& sizes,
@@ -736,23 +698,6 @@ void RandomMatrixAnalysis::saveDetailedTimesToCSV(const std::string& filename,
                  << std::fixed << std::setprecision(6) << times[i].eigenvalueTime << ","
                  << std::fixed << std::setprecision(6) << times[i].linearSolverTime << ","
                  << std::fixed << std::setprecision(6) << times[i].totalTime << std::endl;
-        }
-        file.close();
-    }
-}
-
-// 計算精度・時間のCSV保存
-void RandomMatrixAnalysis::savePerformanceToCSV(const std::string& filename,
-                                                const std::vector<int>& sizes,
-                                                const std::vector<double>& computationTimes) {
-    std::ofstream file(filename);
-    if (file.is_open()) {
-        // ヘッダー行
-        file << "Size,ComputationTime" << std::endl;
-
-        // データ行
-        for (size_t i = 0; i < sizes.size(); i++) {
-            file << sizes[i] << "," << std::fixed << std::setprecision(6) << computationTimes[i] << std::endl;
         }
         file.close();
     }
@@ -1000,17 +945,14 @@ void RandomMatrixAnalysis::runRandomMatrixTest(int maxSize, int numTests) {
     }
 
     // 結果をCSVファイルに保存
-    std::string resultsFilename = "data/computation_times.csv";
     std::string propertiesFilename = "data/matrix_properties.csv";
     std::string detailedTimesFilename = "data/detailed_computation_times.csv";
 
-    savePerformanceToCSV(resultsFilename, sizes, computationTimes);
     saveMatrixPropertiesToCSV(propertiesFilename, sizes, determinants, ranks, allEigenvalues);
     saveDetailedTimesToCSV(detailedTimesFilename, sizes, detailedTimes);
 
     std::cout << "\n=== テスト完了 ===" << std::endl;
     std::cout << "結果を以下のファイルに保存しました:" << std::endl;
-    std::cout << "  計算時間: " << resultsFilename << std::endl;
     std::cout << "  行列特性: " << propertiesFilename << std::endl;
     std::cout << "  詳細計算時間: " << detailedTimesFilename << std::endl;
 
