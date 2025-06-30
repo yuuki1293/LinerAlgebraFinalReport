@@ -23,12 +23,6 @@ struct ComputationTimes {
     }
 };
 
-// Eigenライブラリのインクルード（インストールが必要）
-#ifdef EIGEN_AVAILABLE
-#include <Eigen/Dense>
-#include <Eigen/Eigenvalues>
-#endif
-
 namespace LinearAlgebra {
 
 // 行列の基本操作
