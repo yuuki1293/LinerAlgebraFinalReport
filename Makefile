@@ -36,6 +36,7 @@ run: $(MAIN_TARGET)
 # クリーン
 clean:
 	rm -rf $(BUILDDIR)/*
+	rm -rf data/*
 
 # ヘルプ
 help:
