@@ -22,7 +22,7 @@ void runDeterminantTest() {
     MatrixOperations::printMatrix(test1, "テスト行列1");
     double det_test1 = MatrixOperations::determinant(test1);
     std::cout << "行列式: " << det_test1 << std::endl;
-    MatrixOperations::saveDeterminantToCSV(test1, 3, det_test1);
+    MatrixOperations::saveDeterminantToCSV(3, det_test1);
 
     std::vector<std::vector<double>> test2 = {
         {1, 0, 0},
@@ -32,7 +32,7 @@ void runDeterminantTest() {
     MatrixOperations::printMatrix(test2, "テスト行列2");
     double det_test2 = MatrixOperations::determinant(test2);
     std::cout << "行列式: " << det_test2 << std::endl;
-    MatrixOperations::saveDeterminantToCSV(test2, 3, det_test2);
+    MatrixOperations::saveDeterminantToCSV(3, det_test2);
 }
 
 // 連立方程式解法テスト関数

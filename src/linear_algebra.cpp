@@ -210,10 +210,9 @@ std::vector<std::vector<double>> MatrixOperations::copyMatrix(const std::vector<
     return matrix;
 }
 
-// 行列式の保存（data/det/<N>.csv）
-void MatrixOperations::saveDeterminantToCSV(const std::vector<std::vector<double>>& matrix, int n, double determinant) {
-    (void)matrix; // 未使用パラメータの警告を抑制
-    std::string filename = "data/det/" + std::to_string(n) + ".csv";
+// 行列式の保存（data/det/<N>）
+void MatrixOperations::saveDeterminantToCSV(int n, double determinant) {
+    std::string filename = "data/det/" + std::to_string(n);
     std::ofstream file(filename);
     if (file.is_open()) {
         // 行列式の値のみを保存
@@ -587,8 +586,8 @@ void RandomMatrixAnalysis::runSingleSizeTest(int n, int testIndex) {
     auto detDuration = std::chrono::duration_cast<std::chrono::microseconds>(detEnd - detStart);
     double determinantTime = detDuration.count() / 1000.0;
 
-    // 行列式をdata/det/<N>.csvに保存
-    MatrixOperations::saveDeterminantToCSV(matrix, n, determinant);
+    // 行列式をdata/determinants.csvに保存
+    MatrixOperations::saveDeterminantToCSV(n, determinant);
 
     // 条件数とランク計算
     int rank = MatrixOperations::rank(matrix);
@@ -715,8 +714,8 @@ void RandomMatrixAnalysis::runRandomMatrixTest(int maxSize, int numTests) {
             auto detDuration = std::chrono::duration_cast<std::chrono::microseconds>(detEnd - detStart);
             double determinantTime = detDuration.count() / 1000.0;
 
-            // 行列式をdata/det/<N>.csvに保存
-            MatrixOperations::saveDeterminantToCSV(matrix, n, determinant);
+            // 行列式をdata/determinants.csvに保存
+            MatrixOperations::saveDeterminantToCSV(n, determinant);
 
             // 条件数とランク計算
             int rank = MatrixOperations::rank(matrix);
