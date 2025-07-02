@@ -70,19 +70,6 @@ public:
 // 固有値・固有ベクトル計算
 class EigenvalueAnalysis {
 public:
-    // 固有値分解（対角化による）
-    static void eigenvalueDecomposition(const std::vector<std::vector<double>>& matrix);
-
-    // 対角化による固有値計算
-    static std::vector<std::complex<double>> diagonalizationEigenvalues(const std::vector<std::vector<double>>& matrix);
-
-    // 対角化可能性の判定
-    static bool isDiagonalizable(const std::vector<std::vector<double>>& matrix);
-
-    // 固有値の重複度をチェック
-    static std::vector<int> checkEigenvalueMultiplicity(const std::vector<std::complex<double>>& eigenvalues,
-                                                       double tolerance = 1e-10);
-
     // べき乗法による最大固有値と固有ベクトルの計算
     static std::pair<double, std::vector<double>> powerMethod(const std::vector<std::vector<double>>& matrix,
                                                              int maxIterations = 1000, double tolerance = 1e-6);
