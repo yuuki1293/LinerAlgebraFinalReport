@@ -213,10 +213,10 @@ std::vector<std::vector<double>> MatrixOperations::copyMatrix(const std::vector<
 // 行列式の保存（data/det/<N>）
 void MatrixOperations::saveDeterminantToCSV(int n, double determinant) {
     std::string filename = "data/det/" + std::to_string(n);
-    std::ofstream file(filename);
+    std::ofstream file(filename, std::ios::out | std::ios::trunc);
     if (file.is_open()) {
         // 行列式の値のみを保存
-        file << std::fixed << std::setprecision(10) << determinant << std::endl;
+        file << std::fixed << std::setprecision(10) << determinant;
         file.close();
     }
 }
@@ -282,18 +282,6 @@ std::vector<double> LinearSolver::solveLU(const std::vector<std::vector<double>>
 }
 
 // NumericalAnalysis クラスの実装
-double NumericalAnalysis::matrixNorm(const std::vector<std::vector<double>>& matrix, const std::string& normType) {
-    if (normType == "frobenius") {
-        double sum = 0.0;
-        for (const auto& row : matrix) {
-            for (double val : row) {
-                sum += val * val;
-            }
-        }
-        return std::sqrt(sum);
-    }
-    return 0.0;
-}
 
 // EigenvalueAnalysis クラスの実装
 

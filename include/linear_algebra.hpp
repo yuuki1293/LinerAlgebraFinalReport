@@ -82,10 +82,6 @@ public:
 // 固有値・固有ベクトル計算
 class EigenvalueAnalysis {
 public:
-    // べき乗法による最大固有値と固有ベクトルの計算
-    static std::pair<double, std::vector<double>> powerMethod(const std::vector<std::vector<double>>& matrix,
-                                                             int maxIterations = QR_MAX_ITERATIONS, double tolerance = 1e-6);
-
     // QR法による固有値・固有ベクトル計算
     // 戻り値: pair(固有値リスト, 固有ベクトル行列)
     static std::pair<std::vector<std::complex<double>>, std::vector<std::vector<double>>>
@@ -95,25 +91,8 @@ public:
     static std::pair<std::vector<std::vector<double>>, std::vector<std::vector<double>>> qrDecomposition(
         const std::vector<std::vector<double>>& matrix);
 
-    // グラム・シュミット直交化
-    static std::vector<std::vector<double>> gramSchmidt(const std::vector<std::vector<double>>& vectors);
-
     // 固有値の表示
     static void printEigenvalues(const std::vector<std::complex<double>>& eigenvalues, const std::string& name = "固有値");
-
-    // 固有ベクトルの表示
-    static void printEigenvector(const std::vector<double>& eigenvector, double eigenvalue, const std::string& name = "固有ベクトル");
-
-    // NaNチェック関数
-    static bool isNaN(const std::complex<double>& value);
-    static bool isNaN(const std::vector<double>& vector);
-    static bool isNaN(const std::vector<std::complex<double>>& eigenvalues);
-
-    // 特異値分解
-    static void singularValueDecomposition(const std::vector<std::vector<double>>& matrix);
-
-    // 主成分分析
-    static void principalComponentAnalysis(const std::vector<std::vector<double>>& data);
 };
 
 // 線形方程式の解法
@@ -121,29 +100,13 @@ class LinearSolver {
 public:
     // LU分解による解法
     static std::vector<double> solveLU(const std::vector<std::vector<double>>& A, const std::vector<double>& b);
-
-    // QR分解による解法
-    static std::vector<double> solveQR(const std::vector<std::vector<double>>& A, const std::vector<double>& b);
-
-    // 最小二乗法
-    static std::vector<double> leastSquares(const std::vector<std::vector<double>>& A, const std::vector<double>& b);
 };
 
 // 数値解析
 class NumericalAnalysis {
 public:
-    // 行列のノルム計算
-    static double matrixNorm(const std::vector<std::vector<double>>& matrix, const std::string& normType = "frobenius");
-
     // ベクトルのノルム計算
     static double vectorNorm(const std::vector<double>& vector, const std::string& normType = "euclidean");
-
-    // 誤差解析
-    static void errorAnalysis(const std::vector<std::vector<double>>& A, const std::vector<double>& b,
-                             const std::vector<double>& x_exact, const std::vector<double>& x_computed);
-
-    // 安定性解析
-    static void stabilityAnalysis(const std::vector<std::vector<double>>& matrix);
 };
 
 // ランダム行列生成とCSV保存
@@ -161,14 +124,7 @@ public:
     // ベクトルのCSV保存
     static void saveVectorToCSV(const std::vector<double>& vector, const std::string& filename);
 
-    // 結果のCSV保存
-    static void saveResultsToCSV(const std::string& filename,
-                                const std::vector<int>& sizes,
-                                const std::vector<double>& determinants,
-                                const std::vector<double>& conditionNumbers,
-                                const std::vector<int>& ranks,
-                                const std::vector<std::vector<std::complex<double>>>& allEigenvalues,
-                                const std::vector<double>& computationTimes);
+
 
     // 詳細計算時間のCSV保存
     static void saveDetailedTimesToCSV(const std::string& filename,
