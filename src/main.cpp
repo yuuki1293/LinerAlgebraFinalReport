@@ -60,7 +60,8 @@ int main() {
         {0, 0, 1}
     };
     MatrixOperations::printMatrix(diagonalizable, "対角化可能な行列");
-    EigenvalueAnalysis::eigenvalueDecomposition(diagonalizable);
+    auto [eigenvalues1, eigenvectors1] = EigenvalueAnalysis::qrEigenDecomposition(diagonalizable);
+    EigenvalueAnalysis::printEigenvalues(eigenvalues1, "QR法による固有値");
 
     std::cout << "対角化できない行列のテスト:" << std::endl;
     std::vector<std::vector<double>> nonDiagonalizable = {
@@ -69,7 +70,8 @@ int main() {
         {0, 0, 2}
     };
     MatrixOperations::printMatrix(nonDiagonalizable, "対角化できない行列");
-    EigenvalueAnalysis::eigenvalueDecomposition(nonDiagonalizable);
+    auto [eigenvalues2, eigenvectors2] = EigenvalueAnalysis::qrEigenDecomposition(nonDiagonalizable);
+    EigenvalueAnalysis::printEigenvalues(eigenvalues2, "QR法による固有値");
 
     // 4. ランダム行列テスト
     std::cout << std::endl << "4. ランダム行列テスト" << std::endl;
