@@ -221,6 +221,20 @@ void MatrixOperations::saveDeterminantToCSV(int n, double determinant) {
     }
 }
 
+void MatrixOperations::saveDeterminantToFile(int n, double determinant) {
+    // data/detディレクトリの作成
+    std::string mkdir_cmd = "mkdir -p data/det";
+    system(mkdir_cmd.c_str());
+
+    std::string filename = "data/det/" + std::to_string(n);
+    std::ofstream file(filename, std::ios::out | std::ios::app);
+    if (file.is_open()) {
+        // 行列式の値を追記保存
+        file << std::fixed << std::setprecision(10) << determinant << std::endl;
+        file.close();
+    }
+}
+
 // EigenvalueAnalysis クラスの実装
 
 // ベクトルのノルム計算
@@ -691,6 +705,7 @@ void RandomMatrixAnalysis::runSingleSizeTest(int n, int testIndex) {
     system("mkdir -p data/A");
     system("mkdir -p data/B");
     system("mkdir -p data/x");
+    system("mkdir -p data/det");
 
     // ランダム行列の生成
     auto matrix = generateRandomMatrix(n);
@@ -720,8 +735,8 @@ void RandomMatrixAnalysis::runSingleSizeTest(int n, int testIndex) {
     auto detDuration = std::chrono::duration_cast<std::chrono::microseconds>(detEnd - detStart);
     double determinantTime = detDuration.count() / 1000.0;
 
-    // 行列式をdata/determinants.csvに保存
-    MatrixOperations::saveDeterminantToCSV(n, determinant);
+    // 行列式をdata/det/<N>ファイルに保存
+    MatrixOperations::saveDeterminantToFile(n, determinant);
 
     // 条件数とランク計算
     int rank = MatrixOperations::rank(matrix);
@@ -808,6 +823,7 @@ void RandomMatrixAnalysis::runRandomMatrixTest(int maxSize, int numTests) {
     system("mkdir -p data/A");
     system("mkdir -p data/B");
     system("mkdir -p data/x");
+    system("mkdir -p data/det");
 
     std::vector<int> sizes;
     std::vector<double> determinants;
@@ -848,8 +864,8 @@ void RandomMatrixAnalysis::runRandomMatrixTest(int maxSize, int numTests) {
             auto detDuration = std::chrono::duration_cast<std::chrono::microseconds>(detEnd - detStart);
             double determinantTime = detDuration.count() / 1000.0;
 
-            // 行列式をdata/determinants.csvに保存
-            MatrixOperations::saveDeterminantToCSV(n, determinant);
+            // 行列式をdata/det/<N>ファイルに保存
+            MatrixOperations::saveDeterminantToFile(n, determinant);
 
             // 条件数とランク計算
             int rank = MatrixOperations::rank(matrix);

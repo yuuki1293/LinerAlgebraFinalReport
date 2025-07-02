@@ -77,6 +77,9 @@ public:
 
     // 行列式の保存（data/determinants.csv）
     static void saveDeterminantToCSV(int n, double determinant);
+
+    // 行列式の保存（data/det/<N>）
+    static void saveDeterminantToFile(int n, double determinant);
 };
 
 // 固有値・固有ベクトル計算
