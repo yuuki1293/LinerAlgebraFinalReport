@@ -13,12 +13,15 @@ INCLUDEDIR = include
 
 # ソースファイル
 SOURCES = $(SRCDIR)/linear_algebra.cpp $(SRCDIR)/main.cpp
+TEST_SOURCES = $(SRCDIR)/linear_algebra.cpp $(SRCDIR)/test_functions.cpp
 OBJECTS = $(SOURCES:$(SRCDIR)/%.cpp=$(BUILDDIR)/%.o)
 DEBUG_OBJECTS = $(SOURCES:$(SRCDIR)/%.cpp=$(BUILDDIR)/%-debug.o)
+TEST_OBJECTS = $(TEST_SOURCES:$(SRCDIR)/%.cpp=$(BUILDDIR)/test-%.o)
 
 # メインプログラム
 MAIN_TARGET = $(BUILDDIR)/main
 DEBUG_TARGET = $(BUILDDIR)/main-debug
+TEST_TARGET = $(BUILDDIR)/test
 
 # デフォルトターゲット
 all: $(MAIN_TARGET)
@@ -32,6 +35,15 @@ debug-run: CXXFLAGS = $(DEBUGFLAGS)
 debug-run: $(DEBUG_TARGET)
 	./$(DEBUG_TARGET)
 
+# テストビルド
+test: CXXFLAGS = $(DEBUGFLAGS)
+test: $(TEST_TARGET)
+
+# テスト実行
+test-run: CXXFLAGS = $(DEBUGFLAGS)
+test-run: $(TEST_TARGET)
+	./$(TEST_TARGET)
+
 # オブジェクトファイルの作成
 $(BUILDDIR)/%.o: $(SRCDIR)/%.cpp
 	@mkdir -p $(BUILDDIR)
@@ -42,6 +54,11 @@ $(BUILDDIR)/%-debug.o: $(SRCDIR)/%.cpp
 	@mkdir -p $(BUILDDIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
+# テストオブジェクトファイルの作成
+$(BUILDDIR)/test-%.o: $(SRCDIR)/%.cpp
+	@mkdir -p $(BUILDDIR)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
 # メインプログラムの作成
 $(MAIN_TARGET): $(OBJECTS)
 	$(CXX) $(OBJECTS) -o $@ $(LDFLAGS)
@@ -49,6 +66,10 @@ $(MAIN_TARGET): $(OBJECTS)
 # デバッグメインプログラムの作成
 $(DEBUG_TARGET): $(DEBUG_OBJECTS)
 	$(CXX) $(DEBUG_OBJECTS) -o $@ $(LDFLAGS)
+
+# テストプログラムの作成
+$(TEST_TARGET): $(TEST_OBJECTS)
+	$(CXX) $(TEST_OBJECTS) -o $@ $(LDFLAGS)
 
 # メインプログラムの実行
 run: $(MAIN_TARGET)
@@ -91,6 +112,8 @@ help:
 	@echo "利用可能なターゲット:"
 	@echo "  all       - メインプログラムをビルド"
 	@echo "  debug     - デバッグモードでビルド（n=10最大）"
+	@echo "  test      - 単体テストをビルド"
+	@echo "  test-run  - 単体テストを実行"
 	@echo "  run       - メインプログラムを実行"
 	@echo "  debug-run - デバッグモードで実行"
 	@echo "  plot      - 計算時間グラフを生成"
@@ -101,4 +124,4 @@ help:
 	@echo "  clean     - ビルドファイルを削除"
 	@echo "  help      - このヘルプを表示"
 
-.PHONY: all debug run debug-run clean help
+.PHONY: all debug test test-run run debug-run clean help

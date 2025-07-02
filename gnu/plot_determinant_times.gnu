@@ -11,9 +11,9 @@ set ylabel "計算時間 (ms)" font "Arial,14"
 set grid
 
 # データのプロット（ヘッダー行をスキップ）
-plot "data/determinant_times.csv" using 1:2 skip 1 with points pointtype 7 pointsize 0.7 title "行列式計算時間"
+plot "data/determinant_times.csv" using 1:2 skip 1 with points pointtype 7 pointsize 0.7 title ""
 
 # 対数スケール版
 set output "figures/determinant_times_log.png"
 set logscale y
-plot "data/determinant_times.csv" using 1:2 skip 1 with points pointtype 7 pointsize 0.7 title "行列式計算時間"
+plot "data/determinant_times.csv" using 1:2 skip 1 with points pointtype 7 pointsize 0.7 title ""

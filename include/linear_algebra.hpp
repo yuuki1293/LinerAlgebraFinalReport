@@ -10,6 +10,15 @@
 #include <random>
 #include <chrono>
 
+// QR法の反復回数設定
+#ifndef QR_MAX_ITERATIONS
+#define QR_MAX_ITERATIONS 1000
+#endif
+
+#ifndef QR_TOLERANCE
+#define QR_TOLERANCE 1e-8
+#endif
+
 // 計算時間を各項目ごとに記録する構造体
 struct ComputationTimes {
     double determinantTime = 0.0;      // 行列式計算時間
@@ -72,12 +81,12 @@ class EigenvalueAnalysis {
 public:
     // べき乗法による最大固有値と固有ベクトルの計算
     static std::pair<double, std::vector<double>> powerMethod(const std::vector<std::vector<double>>& matrix,
-                                                             int maxIterations = 1000, double tolerance = 1e-6);
+                                                             int maxIterations = QR_MAX_ITERATIONS, double tolerance = 1e-6);
 
     // QR法による固有値・固有ベクトル計算
     // 戻り値: pair(固有値リスト, 固有ベクトル行列)
     static std::pair<std::vector<std::complex<double>>, std::vector<std::vector<double>>>
-    qrEigenDecomposition(const std::vector<std::vector<double>>& matrix, int maxIterations = 1000, double tolerance = 1e-8);
+    qrEigenDecomposition(const std::vector<std::vector<double>>& matrix, int maxIterations = QR_MAX_ITERATIONS, double tolerance = QR_TOLERANCE);
 
     // QR分解
     static std::pair<std::vector<std::vector<double>>, std::vector<std::vector<double>>> qrDecomposition(

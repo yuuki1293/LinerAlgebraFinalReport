@@ -284,6 +284,85 @@ double NumericalAnalysis::matrixNorm(const std::vector<std::vector<double>>& mat
     return 0.0;
 }
 
+// EigenvalueAnalysis クラスの実装
+
+// QR分解による固有値・固有ベクトル計算
+std::pair<std::vector<std::complex<double>>, std::vector<std::vector<double>>>
+EigenvalueAnalysis::qrEigenDecomposition(const std::vector<std::vector<double>>& matrix, int maxIterations, double tolerance) {
+    (void)tolerance; // 未使用パラメータの警告を抑制
+    int n = matrix.size();
+    std::vector<std::vector<double>> A = MatrixOperations::copyMatrix(matrix);
+    std::vector<std::vector<double>> Q_total = MatrixOperations::identity(n);
+
+    for (int iter = 0; iter < maxIterations; iter++) {
+        // Householder変換によるQR分解
+        auto [Q, R] = EigenvalueAnalysis::qrDecomposition(A);
+        A = MatrixOperations::matrixMultiply(R, Q);
+        Q_total = MatrixOperations::matrixMultiply(Q_total, Q);
+    }
+
+    // 固有値の抽出（対角成分）
+    std::vector<std::complex<double>> eigenvalues(n);
+    for (int i = 0; i < n; i++) {
+        eigenvalues[i] = std::complex<double>(A[i][i], 0.0);
+    }
+
+        // 固有ベクトルは累積Q行列の列ベクトル
+    std::vector<std::vector<double>> eigenvectors = Q_total;
+
+    return {eigenvalues, eigenvectors};
+}
+
+// 固有値の表示
+void EigenvalueAnalysis::printEigenvalues(const std::vector<std::complex<double>>& eigenvalues, const std::string& name) {
+    std::cout << name << ":" << std::endl;
+    for (size_t i = 0; i < eigenvalues.size(); i++) {
+        std::cout << "λ[" << i << "] = " << eigenvalues[i].real();
+        if (std::abs(eigenvalues[i].imag()) > 1e-10) {
+            std::cout << " + " << eigenvalues[i].imag() << "i";
+        }
+        std::cout << std::endl;
+    }
+    std::cout << std::endl;
+}
+
+// Householder変換によるQR分解
+std::pair<std::vector<std::vector<double>>, std::vector<std::vector<double>>>
+EigenvalueAnalysis::qrDecomposition(const std::vector<std::vector<double>>& matrix) {
+    int n = matrix.size();
+    std::vector<std::vector<double>> A = matrix;
+    std::vector<std::vector<double>> Q = MatrixOperations::identity(n);
+
+    for (int k = 0; k < n - 1; ++k) {
+        // xベクトルの抽出
+        std::vector<double> x(n - k);
+        for (int i = k; i < n; ++i) x[i - k] = A[i][k];
+        double norm_x = 0.0;
+        for (double xi : x) norm_x += xi * xi;
+        norm_x = std::sqrt(norm_x);
+        if (norm_x < 1e-12) continue;
+        std::vector<double> v = x;
+        v[0] += (x[0] >= 0 ? norm_x : -norm_x);
+        double norm_v = 0.0;
+        for (double vi : v) norm_v += vi * vi;
+        norm_v = std::sqrt(norm_v);
+        for (double& vi : v) vi /= norm_v;
+
+        // Householder行列 H = I - 2vv^T
+        std::vector<std::vector<double>> H = MatrixOperations::identity(n);
+        for (int i = k; i < n; ++i) {
+            for (int j = k; j < n; ++j) {
+                H[i][j] -= 2.0 * v[i - k] * v[j - k];
+            }
+        }
+        // A ← H * A
+        A = MatrixOperations::matrixMultiply(H, A);
+        // Q ← Q * H
+        Q = MatrixOperations::matrixMultiply(Q, H);
+    }
+    return {Q, A};
+}
+
 // RandomMatrixAnalysis クラスの実装
 
 // ランダム行列の生成
@@ -298,7 +377,14 @@ std::vector<std::vector<double>> RandomMatrixAnalysis::generateRandomMatrix(int 
             matrix[i][j] = dis(gen);
         }
     }
-
+    // 対称化
+    for (int i = 0; i < n; i++) {
+        for (int j = i + 1; j < n; j++) {
+            double sym = 0.5 * (matrix[i][j] + matrix[j][i]);
+            matrix[i][j] = sym;
+            matrix[j][i] = sym;
+        }
+    }
     return matrix;
 }
 
