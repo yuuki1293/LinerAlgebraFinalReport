@@ -227,10 +227,10 @@ void MatrixOperations::saveDeterminantToFile(int n, double determinant) {
     system(mkdir_cmd.c_str());
 
     std::string filename = "data/det/" + std::to_string(n);
-    std::ofstream file(filename, std::ios::out | std::ios::app);
+    std::ofstream file(filename, std::ios::out | std::ios::trunc);
     if (file.is_open()) {
-        // 行列式の値を追記保存
-        file << std::fixed << std::setprecision(10) << determinant << std::endl;
+        // 行列式の値を上書き保存（最新のみ）
+        file << std::fixed << std::setprecision(10) << determinant;
         file.close();
     }
 }
@@ -699,13 +699,7 @@ void RandomMatrixAnalysis::saveMatrixPropertiesToCSV(const std::string& filename
 void RandomMatrixAnalysis::runSingleSizeTest(int n, int testIndex) {
     std::cout << "サイズ " << n << " のランダム行列テスト " << testIndex << " を実行中..." << std::endl;
 
-    // データディレクトリの作成
-    system("mkdir -p data");
-    system("mkdir -p data/eigen");
-    system("mkdir -p data/A");
-    system("mkdir -p data/B");
-    system("mkdir -p data/x");
-    system("mkdir -p data/det");
+    // runSingleSizeTestではディレクトリ作成は行わない
 
     // ランダム行列の生成
     auto matrix = generateRandomMatrix(n);
@@ -720,13 +714,7 @@ void RandomMatrixAnalysis::runSingleSizeTest(int n, int testIndex) {
     auto linearSolverDuration = std::chrono::duration_cast<std::chrono::microseconds>(linearSolverEnd - linearSolverStart);
     double linearSolverTime = linearSolverDuration.count() / 1000.0;
 
-    // 元の行列と右辺ベクトルを保存
-    std::string matrixAFilename = "data/A/" + std::to_string(n) + ".csv";
-    std::string vectorBFilename = "data/B/" + std::to_string(n) + ".csv";
-    std::string solutionXFilename = "data/x/" + std::to_string(n) + ".csv";
-    saveMatrixToCSV(matrix, matrixAFilename);
-    saveVectorToCSV(b, vectorBFilename);
-    saveVectorToCSV(x, solutionXFilename);
+    // runSingleSizeTestではファイル保存は行わない
 
     // 行列式計算（時間測定）
     auto detStart = std::chrono::high_resolution_clock::now();
@@ -735,8 +723,7 @@ void RandomMatrixAnalysis::runSingleSizeTest(int n, int testIndex) {
     auto detDuration = std::chrono::duration_cast<std::chrono::microseconds>(detEnd - detStart);
     double determinantTime = detDuration.count() / 1000.0;
 
-    // 行列式をdata/det/<N>ファイルに保存
-    MatrixOperations::saveDeterminantToFile(n, determinant);
+    // runSingleSizeTestではファイル保存は行わない
 
     // 条件数とランク計算
     int rank = MatrixOperations::rank(matrix);
@@ -785,32 +772,7 @@ void RandomMatrixAnalysis::runSingleSizeTest(int n, int testIndex) {
     }
     std::cout << std::endl;
 
-    // 行列と固有値・固有ベクトルの保存
-    std::string matrixFilename = "data/random_matrix_" + std::to_string(n) + "_" + std::to_string(testIndex) + ".csv";
-    std::string eigenFilename = "data/eigen/" + std::to_string(n) + ".csv";
-
-    saveMatrixToCSV(matrix, matrixFilename);
-
-    // 固有値と固有ベクトルをCSV保存（横に並べて）
-    std::ofstream eigenFile(eigenFilename);
-    if (eigenFile.is_open()) {
-        // ヘッダー行
-        eigenFile << "Index,Eigenvalue";
-        for (int i = 0; i < n; i++) {
-            eigenFile << ",Eigenvector_" << i;
-        }
-        eigenFile << std::endl;
-
-        // データ行（各固有値と対応する固有ベクトル）
-        for (int i = 0; i < n; i++) {
-            eigenFile << i << "," << eigenvalues[i].real();
-            for (int j = 0; j < n; j++) {
-                eigenFile << "," << eigenvectors[j][i]; // 列ベクトルとして保存
-            }
-            eigenFile << std::endl;
-        }
-        eigenFile.close();
-    }
+    // runSingleSizeTestではファイル保存は行わない
 }
 
 // n=1~100のランダム行列テスト実行
@@ -823,7 +785,6 @@ void RandomMatrixAnalysis::runRandomMatrixTest(int maxSize, int numTests) {
     system("mkdir -p data/A");
     system("mkdir -p data/B");
     system("mkdir -p data/x");
-    system("mkdir -p data/det");
 
     std::vector<int> sizes;
     std::vector<double> determinants;
