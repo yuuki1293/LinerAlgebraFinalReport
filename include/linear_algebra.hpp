@@ -74,6 +74,9 @@ public:
 
     // 行列のコピー
     static std::vector<std::vector<double>> copyMatrix(const std::vector<std::vector<double>>& matrix);
+
+    // 行列式の保存（data/det/<N>.csv）
+    static void saveDeterminantToCSV(const std::vector<std::vector<double>>& matrix, int n, double determinant);
 };
 
 // 固有値・固有ベクトル計算
