@@ -285,19 +285,58 @@ std::vector<double> LinearSolver::solveLU(const std::vector<std::vector<double>>
 
 // EigenvalueAnalysis クラスの実装
 
-// QR分解による固有値・固有ベクトル計算
+// 改良されたQR分解による固有値・固有ベクトル計算
 std::pair<std::vector<std::complex<double>>, std::vector<std::vector<double>>>
 EigenvalueAnalysis::qrEigenDecomposition(const std::vector<std::vector<double>>& matrix, int maxIterations, double tolerance) {
-    (void)tolerance; // 未使用パラメータの警告を抑制
     int n = matrix.size();
     std::vector<std::vector<double>> A = MatrixOperations::copyMatrix(matrix);
     std::vector<std::vector<double>> Q_total = MatrixOperations::identity(n);
+    std::vector<double> prev_diagonal(n);
 
     for (int iter = 0; iter < maxIterations; iter++) {
-        // Householder変換によるQR分解
+        // 前回の対角成分を保存
+        for (int i = 0; i < n; i++) {
+            prev_diagonal[i] = A[i][i];
+        }
+
+        // 改良されたHouseholder変換によるQR分解
         auto [Q, R] = EigenvalueAnalysis::qrDecomposition(A);
-        A = MatrixOperations::matrixMultiply(R, Q);
-        Q_total = MatrixOperations::matrixMultiply(Q_total, Q);
+
+        // R*Qの計算（行列乗算を最適化）
+        std::vector<std::vector<double>> RQ(n, std::vector<double>(n, 0.0));
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                for (int k = 0; k < n; k++) {
+                    RQ[i][j] += R[i][k] * Q[k][j];
+                }
+            }
+        }
+        A = RQ;
+
+        // Q_totalの更新（行列乗算を最適化）
+        std::vector<std::vector<double>> Q_new(n, std::vector<double>(n, 0.0));
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                for (int k = 0; k < n; k++) {
+                    Q_new[i][j] += Q_total[i][k] * Q[k][j];
+                }
+            }
+        }
+        Q_total = Q_new;
+
+        // 収束判定（対角成分の変化をチェック）
+        if (iter > 0) {
+            bool converged = true;
+            for (int i = 0; i < n; i++) {
+                if (std::abs(A[i][i] - prev_diagonal[i]) > tolerance) {
+                    converged = false;
+                    break;
+                }
+            }
+            if (converged) {
+                break;
+            }
+        }
     }
 
     // 固有値の抽出（対角成分）
@@ -306,7 +345,110 @@ EigenvalueAnalysis::qrEigenDecomposition(const std::vector<std::vector<double>>&
         eigenvalues[i] = std::complex<double>(A[i][i], 0.0);
     }
 
-        // 固有ベクトルは累積Q行列の列ベクトル
+    // 固有ベクトルは累積Q行列の列ベクトル
+    std::vector<std::vector<double>> eigenvectors = Q_total;
+
+    return {eigenvalues, eigenvectors};
+}
+
+// シフト付きQR法による固有値・固有ベクトル計算（高速版）
+std::pair<std::vector<std::complex<double>>, std::vector<std::vector<double>>>
+EigenvalueAnalysis::shiftedQREigenDecomposition(
+    const std::vector<std::vector<double>>& matrix,
+    int maxIterations,
+    double tolerance
+) {
+    int n = matrix.size();
+    std::vector<std::vector<double>> A = MatrixOperations::copyMatrix(matrix);
+    std::vector<std::vector<double>> Q_total = MatrixOperations::identity(n);
+    std::vector<double> prev_diagonal(n);
+
+    for (int iter = 0; iter < maxIterations; iter++) {
+        // 前回の対角成分を保存
+        for (int i = 0; i < n; i++) {
+            prev_diagonal[i] = A[i][i];
+        }
+
+        // Wilkinsonシフトの計算（右下2x2行列の固有値）
+        double shift = 0.0;
+        if (n >= 2) {
+            double a = A[n-2][n-2];
+            double b = A[n-2][n-1];
+            double c = A[n-1][n-2];
+            double d = A[n-1][n-1];
+
+            double trace = a + d;
+            double det = a * d - b * c;
+            double discriminant = trace * trace - 4 * det;
+
+            if (discriminant >= 0) {
+                // 実数固有値の場合、より近い方を選択
+                double lambda1 = (trace + std::sqrt(discriminant)) / 2.0;
+                double lambda2 = (trace - std::sqrt(discriminant)) / 2.0;
+                shift = (std::abs(lambda1 - d) < std::abs(lambda2 - d)) ? lambda1 : lambda2;
+            } else {
+                // 複素固有値の場合、トレースの半分を使用
+                shift = trace / 2.0;
+            }
+        }
+
+        // シフトを適用
+        for (int i = 0; i < n; i++) {
+            A[i][i] -= shift;
+        }
+
+        // QR分解
+        auto [Q, R] = EigenvalueAnalysis::qrDecomposition(A);
+
+        // R*Qの計算（行列乗算を最適化）
+        std::vector<std::vector<double>> RQ(n, std::vector<double>(n, 0.0));
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                for (int k = 0; k < n; k++) {
+                    RQ[i][j] += R[i][k] * Q[k][j];
+                }
+            }
+        }
+        A = RQ;
+
+        // シフトを戻す
+        for (int i = 0; i < n; i++) {
+            A[i][i] += shift;
+        }
+
+        // Q_totalの更新（行列乗算を最適化）
+        std::vector<std::vector<double>> Q_new(n, std::vector<double>(n, 0.0));
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                for (int k = 0; k < n; k++) {
+                    Q_new[i][j] += Q_total[i][k] * Q[k][j];
+                }
+            }
+        }
+        Q_total = Q_new;
+
+        // 収束判定（対角成分の変化をチェック）
+        if (iter > 0) {
+            bool converged = true;
+            for (int i = 0; i < n; i++) {
+                if (std::abs(A[i][i] - prev_diagonal[i]) > tolerance) {
+                    converged = false;
+                    break;
+                }
+            }
+            if (converged) {
+                break;
+            }
+        }
+    }
+
+    // 固有値の抽出（対角成分）
+    std::vector<std::complex<double>> eigenvalues(n);
+    for (int i = 0; i < n; i++) {
+        eigenvalues[i] = std::complex<double>(A[i][i], 0.0);
+    }
+
+    // 固有ベクトルは累積Q行列の列ベクトル
     std::vector<std::vector<double>> eigenvectors = Q_total;
 
     return {eigenvalues, eigenvectors};
@@ -329,37 +471,41 @@ void EigenvalueAnalysis::printEigenvalues(const std::vector<std::complex<double>
 std::pair<std::vector<std::vector<double>>, std::vector<std::vector<double>>>
 EigenvalueAnalysis::qrDecomposition(const std::vector<std::vector<double>>& matrix) {
     int n = matrix.size();
-    std::vector<std::vector<double>> A = matrix;
+    std::vector<std::vector<double>> R = matrix;
     std::vector<std::vector<double>> Q = MatrixOperations::identity(n);
 
     for (int k = 0; k < n - 1; ++k) {
         // xベクトルの抽出
         std::vector<double> x(n - k);
-        for (int i = k; i < n; ++i) x[i - k] = A[i][k];
+        for (int i = k; i < n; ++i) x[i - k] = R[i][k];
+        // ノルム計算
         double norm_x = 0.0;
         for (double xi : x) norm_x += xi * xi;
         norm_x = std::sqrt(norm_x);
         if (norm_x < 1e-12) continue;
+        // vベクトルの構築
         std::vector<double> v = x;
         v[0] += (x[0] >= 0 ? norm_x : -norm_x);
+        // vの正規化
         double norm_v = 0.0;
         for (double vi : v) norm_v += vi * vi;
         norm_v = std::sqrt(norm_v);
+        if (norm_v < 1e-12) continue;
         for (double& vi : v) vi /= norm_v;
-
-        // Householder行列 H = I - 2vv^T
-        std::vector<std::vector<double>> H = MatrixOperations::identity(n);
-        for (int i = k; i < n; ++i) {
-            for (int j = k; j < n; ++j) {
-                H[i][j] -= 2.0 * v[i - k] * v[j - k];
-            }
+        // R = H_k * R
+        for (int j = k; j < n; ++j) {
+            double dot = 0.0;
+            for (int i = k; i < n; ++i) dot += v[i - k] * R[i][j];
+            for (int i = k; i < n; ++i) R[i][j] -= 2.0 * v[i - k] * dot;
         }
-        // A ← H * A
-        A = MatrixOperations::matrixMultiply(H, A);
-        // Q ← Q * H
-        Q = MatrixOperations::matrixMultiply(Q, H);
+        // Q = Q * H_k
+        for (int i = 0; i < n; ++i) {
+            double dot = 0.0;
+            for (int j = k; j < n; ++j) dot += Q[i][j] * v[j - k];
+            for (int j = k; j < n; ++j) Q[i][j] -= 2.0 * v[j - k] * dot;
+        }
     }
-    return {Q, A};
+    return {Q, R};
 }
 
 // RandomMatrixAnalysis クラスの実装

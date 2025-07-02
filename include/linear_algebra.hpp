@@ -93,6 +93,14 @@ public:
 
     // 固有値の表示
     static void printEigenvalues(const std::vector<std::complex<double>>& eigenvalues, const std::string& name = "固有値");
+
+    // シフト付きQR法による固有値・固有ベクトル計算（高速版）
+    static std::pair<std::vector<std::complex<double>>, std::vector<std::vector<double>>>
+    shiftedQREigenDecomposition(
+        const std::vector<std::vector<double>>& matrix,
+        int maxIterations = 200,
+        double tolerance = 1e-8
+    );
 };
 
 // 線形方程式の解法

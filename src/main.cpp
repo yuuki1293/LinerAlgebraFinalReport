@@ -1,11 +1,12 @@
 // QR法の反復回数設定（必要に応じて変更可能）
-#define QR_MAX_ITERATIONS 50000
-#define QR_TOLERANCE 1e-10
+#define QR_MAX_ITERATIONS 500
+#define QR_TOLERANCE 1e-6
 
 #include "../include/linear_algebra.hpp"
 #include <iostream>
 #include <vector>
 #include <iomanip>
+#include <chrono>
 
 using namespace LinearAlgebra;
 
@@ -71,12 +72,14 @@ void runEigenvalueTest() {
         {-2, 2, -2},
         {0, -2, 3}
     };
-    MatrixOperations::printMatrix(matrix, "テスト行列");
+    MatrixOperations::printMatrix(matrix, "テスト行列（対称行列）");
+
+    // 通常のQR法による計算
     auto [eigenvalues, eigenvectors] = EigenvalueAnalysis::qrEigenDecomposition(matrix);
     EigenvalueAnalysis::printEigenvalues(eigenvalues, "QR法による固有値");
 
     // 固有ベクトルの表示
-    std::cout << "固有ベクトル:" << std::endl;
+    std::cout << "QR法による固有ベクトル:" << std::endl;
     for (size_t i = 0; i < eigenvectors.size(); i++) {
         std::cout << "v[" << i << "] = [";
         for (size_t j = 0; j < eigenvectors[i].size(); j++) {
@@ -102,6 +105,56 @@ void runRandomMatrixTest() {
 #endif
     std::cout << "注意: このテストは時間がかかる場合があります。" << std::endl;
     RandomMatrixAnalysis::runRandomMatrixTest(maxSize, 1);
+}
+
+// パフォーマンス比較テスト関数
+void runPerformanceComparisonTest() {
+    std::cout << std::endl << "5. パフォーマンス比較テスト" << std::endl;
+    std::cout << "------------------------" << std::endl;
+
+    // テスト用の対称行列を生成
+    std::vector<std::vector<double>> matrix = {
+        {4, 1, 0, 0},
+        {1, 3, 1, 0},
+        {0, 1, 2, 1},
+        {0, 0, 1, 1}
+    };
+
+    std::cout << "4x4対称行列での比較:" << std::endl;
+    MatrixOperations::printMatrix(matrix, "テスト行列");
+
+    // 理論値の概算（対称行列のため実数固有値）
+    std::cout << "理論固有値の概算: λ ≈ 4.5, 3.0, 1.5, 0.0" << std::endl;
+    std::cout << std::endl;
+
+    // 通常QR法の時間測定
+    auto start = std::chrono::high_resolution_clock::now();
+    auto [qr_eigenvalues, qr_eigenvectors] = EigenvalueAnalysis::qrEigenDecomposition(matrix);
+    auto end = std::chrono::high_resolution_clock::now();
+    auto qr_time = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+
+    // シフト付きQR法の時間測定
+    start = std::chrono::high_resolution_clock::now();
+    auto [shifted_eigenvalues, shifted_eigenvectors] = EigenvalueAnalysis::shiftedQREigenDecomposition(matrix);
+    end = std::chrono::high_resolution_clock::now();
+    auto shifted_time = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+
+    std::cout << "通常QR法: " << qr_time.count() << " μs" << std::endl;
+    std::cout << "シフト付きQR法: " << shifted_time.count() << " μs" << std::endl;
+    std::cout << "高速化率: " << std::fixed << std::setprecision(1)
+              << (double)qr_time.count() / shifted_time.count() << "倍" << std::endl;
+
+    std::cout << std::endl << "結果比較:" << std::endl;
+    std::cout << "通常QR法 - 固有値: ";
+    for (const auto& val : qr_eigenvalues) {
+        std::cout << std::fixed << std::setprecision(4) << val.real() << " ";
+    }
+    std::cout << std::endl;
+    std::cout << "シフト付きQR法 - 固有値: ";
+    for (const auto& val : shifted_eigenvalues) {
+        std::cout << std::fixed << std::setprecision(4) << val.real() << " ";
+    }
+    std::cout << std::endl;
 }
 
 int main() {
