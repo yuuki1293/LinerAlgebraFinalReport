@@ -96,3 +96,6 @@ Desktop.ini
 
 # DVIファイル
 *.dvi
+
+# zipファイル
+*.zip
