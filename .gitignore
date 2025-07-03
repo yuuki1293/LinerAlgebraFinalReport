@@ -34,6 +34,7 @@ data/eigen/*.csv
 data/A/*.csv
 data/B/*.csv
 data/x/
+data/det/
 
 # PDFファイル
 *.pdf
