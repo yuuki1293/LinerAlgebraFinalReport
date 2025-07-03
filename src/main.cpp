@@ -1,6 +1,6 @@
 // QR法の反復回数設定（必要に応じて変更可能）
-#define QR_MAX_ITERATIONS 500
-#define QR_TOLERANCE 1e-6
+#define QR_MAX_ITERATIONS 1000
+#define QR_TOLERANCE 1e-10
 
 #include "../include/linear_algebra.hpp"
 #include <iostream>
