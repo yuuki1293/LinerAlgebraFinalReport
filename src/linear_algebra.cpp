@@ -215,8 +215,8 @@ void MatrixOperations::saveDeterminantToCSV(int n, double determinant) {
     std::string filename = "data/det/" + std::to_string(n);
     std::ofstream file(filename, std::ios::out | std::ios::trunc);
     if (file.is_open()) {
-        // 行列式の値のみを保存
-        file << std::fixed << std::setprecision(10) << determinant;
+        // 行列式の値を科学記数法で保存
+        file << std::scientific << std::setprecision(10) << determinant;
         file.close();
     }
 }
@@ -229,8 +229,8 @@ void MatrixOperations::saveDeterminantToFile(int n, double determinant) {
     std::string filename = "data/det/" + std::to_string(n);
     std::ofstream file(filename, std::ios::out | std::ios::trunc);
     if (file.is_open()) {
-        // 行列式の値を上書き保存（最新のみ）
-        file << std::fixed << std::setprecision(10) << determinant;
+        // 行列式の値を科学記数法で上書き保存（最新のみ）
+        file << std::scientific << std::setprecision(10) << determinant;
         file.close();
     }
 }
