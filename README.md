@@ -39,6 +39,13 @@
   - Ax=bを満たす解（LU分解で計算）
   - 例：`data/x/3.csv`は3次元解ベクトル
 
+### 行列式ファイル
+- **`data/det/<n>`** - サイズn×nの行列の行列式
+  - 形式：科学記数法（仮数部E+指数部）
+  - 精度：10桁
+  - 例：`1.2345678900E+02`（123.456789）
+  - 例：`data/det/3`は3×3行列の行列式
+
 ### 固有値・固有ベクトルファイル
 - **`data/eigen/eigen_<n>_<test>.csv`** - サイズnの行列の固有値・固有ベクトル
   - 形式：CSV（カンマ区切り）
@@ -94,6 +101,12 @@ Index,Eigenvalue_Real,Eigenvalue_Imaginary,Eigenvector_0,Eigenvector_1,Eigenvect
 ### 必要な環境
 - C++20対応コンパイラ（g++ 10.0以上推奨）
 - Make
+- gnuplot（グラフ生成用）
+
+### コンパイラ設定
+- **通常モード**: `-std=c++20 -Wall -Wextra -O2`
+- **デバッグモード**: `-std=c++20 -Wall -Wextra -g -O0 -DDEBUG_MODE`
+- **インクルードパス**: `./include`
 
 ### Makeコマンドの使い方
 
@@ -116,6 +129,29 @@ make debug
 
 # デバッグモードでビルドして実行
 make debug-run
+```
+
+#### テストモード
+```bash
+# 単体テストをビルド
+make test
+
+# 単体テストを実行
+make test-run
+```
+
+#### グラフ生成
+```bash
+# 全計算時間グラフを生成
+make plot
+
+# 個別の計算時間グラフを生成
+make plot-det      # 行列式計算時間
+make plot-eigen    # 固有値・固有ベクトル計算時間
+make plot-linear   # 線形方程式解法時間
+
+# 全グラフを生成
+make plot-all
 ```
 
 #### その他のコマンド
@@ -150,6 +186,10 @@ make help
 - `data/matrix_properties.csv` - 行列の数学的特性データ
 - `data/detailed_computation_times.csv` - 詳細な計算時間データ
 - `data/eigen/eigen_<n>_<test>.csv` - 各サイズnの固有値・固有ベクトル
+- `figures/` - 生成されるグラフファイル
+  - `determinant_times.png` - 行列式計算時間のグラフ
+  - `eigenvalue_times.png` - 固有値・固有ベクトル計算時間のグラフ
+  - `linear_solver_times.png` - 線形方程式解法時間のグラフ
 
 ## 進め方
 1. 課題の詳細を確認
