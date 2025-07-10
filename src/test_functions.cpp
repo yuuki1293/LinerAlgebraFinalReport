@@ -3,6 +3,8 @@
 #include <iomanip>
 #include <cassert>
 #include <cmath>
+#include <vector>
+#include <algorithm>
 
 using namespace LinearAlgebra;
 
@@ -300,10 +302,49 @@ void testMatrixOperations() {
     std::cout << "行列演算テスト: 成功" << std::endl << std::endl;
 }
 
+void test_jacobiEigenDecomposition() {
+    std::cout << "[Jacobi法 単体テスト]" << std::endl;
+    double tol = 1e-12;
+
+    // 2x2対称行列
+    std::vector<std::vector<double>> mat2 = {{2, 1}, {1, 2}};
+    auto [eig2, vec2] = EigenvalueAnalysis::jacobiEigenDecomposition(mat2, 1000, tol);
+    std::vector<double> expected2 = {3, 1};
+    std::vector<double> result2 = {eig2[0].real(), eig2[1].real()};
+    std::sort(result2.begin(), result2.end());
+    std::sort(expected2.begin(), expected2.end());
+    std::cout << "2x2行列 固有値: ";
+    for (auto v : result2) std::cout << v << " ";
+    std::cout << "(期待値: 1 3)" << std::endl;
+    for (int i = 0; i < 2; ++i) {
+        if (std::abs(result2[i] - expected2[i]) > tol) {
+            std::cout << "  → NG: 固有値誤差 " << std::abs(result2[i] - expected2[i]) << std::endl;
+        }
+    }
+
+    // 3x3対称行列
+    std::vector<std::vector<double>> mat3 = {{1,2,0},{2,3,0},{0,0,4}};
+    auto [eig3, vec3] = EigenvalueAnalysis::jacobiEigenDecomposition(mat3, 2000, tol);
+    std::vector<double> expected3 = {4, 4.2360679775, -0.2360679775};
+    std::vector<double> result3 = {eig3[0].real(), eig3[1].real(), eig3[2].real()};
+    std::sort(result3.begin(), result3.end());
+    std::sort(expected3.begin(), expected3.end());
+    std::cout << "3x3行列 固有値: ";
+    for (auto v : result3) std::cout << v << " ";
+    std::cout << "(期待値: -0.236... 4 4.236...)" << std::endl;
+    for (int i = 0; i < 3; ++i) {
+        if (std::abs(result3[i] - expected3[i]) > 1e-6) {
+            std::cout << "  → NG: 固有値誤差 " << std::abs(result3[i] - expected3[i]) << std::endl;
+        }
+    }
+    std::cout << std::endl;
+}
+
 int main() {
     std::cout << "=== 単体テスト開始 ===" << std::endl << std::endl;
 
     try {
+        test_jacobiEigenDecomposition();
         testMatrixOperations();
         testDeterminant();
         testLinearSolver();

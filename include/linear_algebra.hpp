@@ -16,20 +16,17 @@
 #endif
 
 #ifndef QR_TOLERANCE
-#define QR_TOLERANCE 1e-8
+#define QR_TOLERANCE 1e-10
 #endif
 
 // 計算時間を各項目ごとに記録する構造体
 struct ComputationTimes {
     double determinantTime = 0.0;      // 行列式計算時間
     double eigenvalueTime = 0.0;       // 固有値・固有ベクトル計算時間
+    double eigenvalueComputationTime = 0.0;  // 固有値計算時間のみ
+    double eigenvectorComputationTime = 0.0; // 固有ベクトル計算時間のみ
     double linearSolverTime = 0.0;     // 線形方程式解法時間
     double totalTime = 0.0;            // 総計算時間
-
-    // 合計時間を計算
-    void calculateTotal() {
-        totalTime = determinantTime + eigenvalueTime + linearSolverTime;
-    }
 };
 
 namespace LinearAlgebra {
@@ -90,20 +87,22 @@ public:
     static std::pair<std::vector<std::complex<double>>, std::vector<std::vector<double>>>
     qrEigenDecomposition(const std::vector<std::vector<double>>& matrix, int maxIterations = QR_MAX_ITERATIONS, double tolerance = QR_TOLERANCE);
 
+    // 固有値計算のみ（QR法）
+    // 戻り値: 固有値リスト
+    static std::vector<std::complex<double>>
+    qrEigenvalueComputation(const std::vector<std::vector<double>>& matrix, int maxIterations = QR_MAX_ITERATIONS, double tolerance = QR_TOLERANCE);
+
+    // 固有ベクトル計算のみ（累積Q行列から抽出）
+    // 戻り値: 固有ベクトル行列
+    static std::vector<std::vector<double>>
+    qrEigenvectorComputation(const std::vector<std::vector<double>>& matrix, int maxIterations = QR_MAX_ITERATIONS, double tolerance = QR_TOLERANCE);
+
     // QR分解
     static std::pair<std::vector<std::vector<double>>, std::vector<std::vector<double>>> qrDecomposition(
         const std::vector<std::vector<double>>& matrix);
 
     // 固有値の表示
     static void printEigenvalues(const std::vector<std::complex<double>>& eigenvalues, const std::string& name = "固有値");
-
-    // シフト付きQR法による固有値・固有ベクトル計算（高速版）
-    static std::pair<std::vector<std::complex<double>>, std::vector<std::vector<double>>>
-    shiftedQREigenDecomposition(
-        const std::vector<std::vector<double>>& matrix,
-        int maxIterations = 200,
-        double tolerance = 1e-8
-    );
 };
 
 // 線形方程式の解法
@@ -126,6 +125,9 @@ public:
     // ランダム行列の生成
     static std::vector<std::vector<double>> generateRandomMatrix(int n, double minVal = -10.0, double maxVal = 10.0);
 
+    // 対称ランダム行列の生成（固有値計算用）
+    static std::vector<std::vector<double>> generateSymmetricMatrix(int n, double minVal = -10.0, double maxVal = 10.0);
+
     // ランダムベクトルの生成
     static std::vector<double> generateRandomVector(int n, double minVal = -10.0, double maxVal = 10.0);
 
@@ -134,8 +136,6 @@ public:
 
     // ベクトルのCSV保存
     static void saveVectorToCSV(const std::vector<double>& vector, const std::string& filename);
-
-
 
     // 詳細計算時間のCSV保存
     static void saveDetailedTimesToCSV(const std::string& filename,
@@ -150,6 +150,10 @@ public:
     static void saveEigenvalueTimesToCSV(const std::string& filename,
                                         const std::vector<int>& sizes,
                                         const std::vector<ComputationTimes>& times);
+
+    static void saveEigenvectorTimesToCSV(const std::string& filename,
+                                         const std::vector<int>& sizes,
+                                         const std::vector<ComputationTimes>& times);
 
     static void saveLinearSolverTimesToCSV(const std::string& filename,
                                           const std::vector<int>& sizes,

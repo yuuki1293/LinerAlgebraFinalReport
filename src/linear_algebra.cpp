@@ -341,12 +341,15 @@ EigenvalueAnalysis::qrEigenDecomposition(const std::vector<std::vector<double>>&
         // 収束判定（対角成分の変化をチェック）
         if (iter > 0) {
             bool converged = true;
+            double max_change = 0.0;
             for (int i = 0; i < n; i++) {
-                if (std::abs(A[i][i] - prev_diagonal[i]) > tolerance) {
+                double change = std::abs(A[i][i] - prev_diagonal[i]);
+                max_change = std::max(max_change, change);
+                if (change > tolerance) {
                     converged = false;
-                    break;
                 }
             }
+            // 収束した場合は反復を終了
             if (converged) {
                 break;
             }
@@ -365,50 +368,17 @@ EigenvalueAnalysis::qrEigenDecomposition(const std::vector<std::vector<double>>&
     return {eigenvalues, eigenvectors};
 }
 
-// シフト付きQR法による固有値・固有ベクトル計算（高速版）
-std::pair<std::vector<std::complex<double>>, std::vector<std::vector<double>>>
-EigenvalueAnalysis::shiftedQREigenDecomposition(
-    const std::vector<std::vector<double>>& matrix,
-    int maxIterations,
-    double tolerance
-) {
+// 固有値計算のみ（QR法）
+std::vector<std::complex<double>>
+EigenvalueAnalysis::qrEigenvalueComputation(const std::vector<std::vector<double>>& matrix, int maxIterations, double tolerance) {
     int n = matrix.size();
     std::vector<std::vector<double>> A = MatrixOperations::copyMatrix(matrix);
-    std::vector<std::vector<double>> Q_total = MatrixOperations::identity(n);
     std::vector<double> prev_diagonal(n);
 
     for (int iter = 0; iter < maxIterations; iter++) {
         // 前回の対角成分を保存
         for (int i = 0; i < n; i++) {
             prev_diagonal[i] = A[i][i];
-        }
-
-        // Wilkinsonシフトの計算（右下2x2行列の固有値）
-        double shift = 0.0;
-        if (n >= 2) {
-            double a = A[n-2][n-2];
-            double b = A[n-2][n-1];
-            double c = A[n-1][n-2];
-            double d = A[n-1][n-1];
-
-            double trace = a + d;
-            double det = a * d - b * c;
-            double discriminant = trace * trace - 4 * det;
-
-            if (discriminant >= 0) {
-                // 実数固有値の場合、より近い方を選択
-                double lambda1 = (trace + std::sqrt(discriminant)) / 2.0;
-                double lambda2 = (trace - std::sqrt(discriminant)) / 2.0;
-                shift = (std::abs(lambda1 - d) < std::abs(lambda2 - d)) ? lambda1 : lambda2;
-            } else {
-                // 複素固有値の場合、トレースの半分を使用
-                shift = trace / 2.0;
-            }
-        }
-
-        // シフトを適用
-        for (int i = 0; i < n; i++) {
-            A[i][i] -= shift;
         }
 
         // QR分解
@@ -425,10 +395,60 @@ EigenvalueAnalysis::shiftedQREigenDecomposition(
         }
         A = RQ;
 
-        // シフトを戻す
-        for (int i = 0; i < n; i++) {
-            A[i][i] += shift;
+        // 収束判定（対角成分の変化をチェック）
+        if (iter > 0) {
+            bool converged = true;
+            double max_change = 0.0;
+            for (int i = 0; i < n; i++) {
+                double change = std::abs(A[i][i] - prev_diagonal[i]);
+                max_change = std::max(max_change, change);
+                if (change > tolerance) {
+                    converged = false;
+                }
+            }
+            // 収束した場合は反復を終了
+            if (converged) {
+                break;
+            }
         }
+    }
+
+    // 固有値の抽出（対角成分）
+    std::vector<std::complex<double>> eigenvalues(n);
+    for (int i = 0; i < n; i++) {
+        eigenvalues[i] = std::complex<double>(A[i][i], 0.0);
+    }
+
+    return eigenvalues;
+}
+
+// 固有ベクトル計算のみ（累積Q行列から抽出）
+std::vector<std::vector<double>>
+EigenvalueAnalysis::qrEigenvectorComputation(const std::vector<std::vector<double>>& matrix, int maxIterations, double tolerance) {
+    int n = matrix.size();
+    std::vector<std::vector<double>> A = MatrixOperations::copyMatrix(matrix);
+    std::vector<std::vector<double>> Q_total = MatrixOperations::identity(n);
+    std::vector<double> prev_diagonal(n);
+
+    for (int iter = 0; iter < maxIterations; iter++) {
+        // 前回の対角成分を保存
+        for (int i = 0; i < n; i++) {
+            prev_diagonal[i] = A[i][i];
+        }
+
+        // QR分解
+        auto [Q, R] = EigenvalueAnalysis::qrDecomposition(A);
+
+        // R*Qの計算（行列乗算を最適化）
+        std::vector<std::vector<double>> RQ(n, std::vector<double>(n, 0.0));
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                for (int k = 0; k < n; k++) {
+                    RQ[i][j] += R[i][k] * Q[k][j];
+                }
+            }
+        }
+        A = RQ;
 
         // Q_totalの更新（行列乗算を最適化）
         std::vector<std::vector<double>> Q_new(n, std::vector<double>(n, 0.0));
@@ -444,28 +464,25 @@ EigenvalueAnalysis::shiftedQREigenDecomposition(
         // 収束判定（対角成分の変化をチェック）
         if (iter > 0) {
             bool converged = true;
+            double max_change = 0.0;
             for (int i = 0; i < n; i++) {
-                if (std::abs(A[i][i] - prev_diagonal[i]) > tolerance) {
+                double change = std::abs(A[i][i] - prev_diagonal[i]);
+                max_change = std::max(max_change, change);
+                if (change > tolerance) {
                     converged = false;
-                    break;
                 }
             }
+            // 収束した場合は反復を終了
             if (converged) {
                 break;
             }
         }
     }
 
-    // 固有値の抽出（対角成分）
-    std::vector<std::complex<double>> eigenvalues(n);
-    for (int i = 0; i < n; i++) {
-        eigenvalues[i] = std::complex<double>(A[i][i], 0.0);
-    }
-
     // 固有ベクトルは累積Q行列の列ベクトル
     std::vector<std::vector<double>> eigenvectors = Q_total;
 
-    return {eigenvalues, eigenvectors};
+    return eigenvectors;
 }
 
 // 固有値の表示
@@ -536,14 +553,31 @@ std::vector<std::vector<double>> RandomMatrixAnalysis::generateRandomMatrix(int 
             matrix[i][j] = dis(gen);
         }
     }
-    // 対称化
+    return matrix;
+}
+
+// 対称ランダム行列の生成（固有値計算用）
+std::vector<std::vector<double>> RandomMatrixAnalysis::generateSymmetricMatrix(int n, double minVal, double maxVal) {
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<double> dis(minVal, maxVal);
+
+    std::vector<std::vector<double>> matrix(n, std::vector<double>(n));
+
+    // 上三角部分を生成
     for (int i = 0; i < n; i++) {
-        for (int j = i + 1; j < n; j++) {
-            double sym = 0.5 * (matrix[i][j] + matrix[j][i]);
-            matrix[i][j] = sym;
-            matrix[j][i] = sym;
+        for (int j = i; j < n; j++) {
+            matrix[i][j] = dis(gen);
         }
     }
+
+    // 対称性を保つために下三角部分をコピー
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < i; j++) {
+            matrix[i][j] = matrix[j][i];
+        }
+    }
+
     return matrix;
 }
 
@@ -594,20 +628,24 @@ void RandomMatrixAnalysis::saveDetailedTimesToCSV(const std::string& filename,
                                                   const std::vector<int>& sizes,
                                                   const std::vector<ComputationTimes>& times) {
     std::ofstream file(filename);
-    if (file.is_open()) {
-        // ヘッダー行
-        file << "Size,DeterminantTime,EigenvalueTime,LinearSolverTime,TotalTime" << std::endl;
-
-        // データ行
-        for (size_t i = 0; i < sizes.size(); i++) {
-            file << sizes[i] << ","
-                 << std::fixed << std::setprecision(6) << times[i].determinantTime << ","
-                 << std::fixed << std::setprecision(6) << times[i].eigenvalueTime << ","
-                 << std::fixed << std::setprecision(6) << times[i].linearSolverTime << ","
-                 << std::fixed << std::setprecision(6) << times[i].totalTime << std::endl;
-        }
-        file.close();
+    if (!file.is_open()) {
+        std::cerr << "Error: Could not open file " << filename << std::endl;
+        return;
     }
+
+    // ヘッダー行
+    file << "Size,DeterminantTime,EigenvalueTime,EigenvectorTime,LinearSolverTime\n";
+
+    // データ行
+    for (size_t i = 0; i < sizes.size(); i++) {
+        file << sizes[i] << ","
+             << times[i].determinantTime << ","
+             << times[i].eigenvalueComputationTime << ","
+             << times[i].eigenvectorComputationTime << ","
+             << times[i].linearSolverTime << "\n";
+    }
+
+    file.close();
 }
 
 // 行列式計算時間のCSV保存
@@ -633,17 +671,43 @@ void RandomMatrixAnalysis::saveEigenvalueTimesToCSV(const std::string& filename,
                                                    const std::vector<int>& sizes,
                                                    const std::vector<ComputationTimes>& times) {
     std::ofstream file(filename);
-    if (file.is_open()) {
-        // ヘッダー行
-        file << "Size,EigenvalueTime" << std::endl;
-
-        // データ行
-        for (size_t i = 0; i < sizes.size(); i++) {
-            file << sizes[i] << ","
-                 << std::fixed << std::setprecision(6) << times[i].eigenvalueTime << std::endl;
-        }
-        file.close();
+    if (!file.is_open()) {
+        std::cerr << "Error: Could not open file " << filename << std::endl;
+        return;
     }
+
+    // ヘッダー行
+    file << "Size,EigenvalueTime\n";
+
+    // データ行
+    for (size_t i = 0; i < sizes.size(); i++) {
+        file << sizes[i] << ","
+             << times[i].eigenvalueComputationTime << "\n";
+    }
+
+    file.close();
+}
+
+// 固有ベクトル計算時間のCSV保存
+void RandomMatrixAnalysis::saveEigenvectorTimesToCSV(const std::string& filename,
+                                                    const std::vector<int>& sizes,
+                                                    const std::vector<ComputationTimes>& times) {
+    std::ofstream file(filename);
+    if (!file.is_open()) {
+        std::cerr << "Error: Could not open file " << filename << std::endl;
+        return;
+    }
+
+    // ヘッダー行
+    file << "Size,EigenvectorTime\n";
+
+    // データ行
+    for (size_t i = 0; i < sizes.size(); i++) {
+        file << sizes[i] << ","
+             << times[i].eigenvectorComputationTime << "\n";
+    }
+
+    file.close();
 }
 
 // 線形方程式解法時間のCSV保存
@@ -701,15 +765,15 @@ void RandomMatrixAnalysis::runSingleSizeTest(int n, int testIndex) {
 
     // runSingleSizeTestではディレクトリ作成は行わない
 
-    // ランダム行列の生成
-    auto matrix = generateRandomMatrix(n);
+    // 対称行列の生成（固有値計算用）
+    auto symmetricMatrix = generateSymmetricMatrix(n);
 
     // 右辺ベクトルの生成
     auto b = generateRandomVector(n);
 
     // 連立1次方程式の解を計算（時間測定）
     auto linearSolverStart = std::chrono::high_resolution_clock::now();
-    auto x = LinearSolver::solveLU(matrix, b);
+    auto x = LinearSolver::solveLU(symmetricMatrix, b);
     auto linearSolverEnd = std::chrono::high_resolution_clock::now();
     auto linearSolverDuration = std::chrono::duration_cast<std::chrono::microseconds>(linearSolverEnd - linearSolverStart);
     double linearSolverTime = linearSolverDuration.count() / 1000.0;
@@ -718,7 +782,7 @@ void RandomMatrixAnalysis::runSingleSizeTest(int n, int testIndex) {
 
     // 行列式計算（時間測定）
     auto detStart = std::chrono::high_resolution_clock::now();
-    double determinant = MatrixOperations::determinant(matrix);
+    double determinant = MatrixOperations::determinant(symmetricMatrix);
     auto detEnd = std::chrono::high_resolution_clock::now();
     auto detDuration = std::chrono::duration_cast<std::chrono::microseconds>(detEnd - detStart);
     double determinantTime = detDuration.count() / 1000.0;
@@ -726,14 +790,20 @@ void RandomMatrixAnalysis::runSingleSizeTest(int n, int testIndex) {
     // runSingleSizeTestではファイル保存は行わない
 
     // 条件数とランク計算
-    int rank = MatrixOperations::rank(matrix);
+    int rank = MatrixOperations::rank(symmetricMatrix);
 
-    // 固有値・固有ベクトル計算（時間測定）
+    // 固有値・固有ベクトル計算（分離して時間測定）
     auto eigenStart = std::chrono::high_resolution_clock::now();
-    auto [eigenvalues, eigenvectors] = EigenvalueAnalysis::qrEigenDecomposition(matrix);
+    auto eigenvalues = EigenvalueAnalysis::qrEigenvalueComputation(symmetricMatrix);
     auto eigenEnd = std::chrono::high_resolution_clock::now();
     auto eigenDuration = std::chrono::duration_cast<std::chrono::microseconds>(eigenEnd - eigenStart);
     double eigenvalueTime = eigenDuration.count() / 1000.0;
+
+    auto eigenvectorStart = std::chrono::high_resolution_clock::now();
+    auto eigenvectors = EigenvalueAnalysis::qrEigenvectorComputation(symmetricMatrix);
+    auto eigenvectorEnd = std::chrono::high_resolution_clock::now();
+    auto eigenvectorDuration = std::chrono::duration_cast<std::chrono::microseconds>(eigenvectorEnd - eigenvectorStart);
+    double eigenvectorTime = eigenvectorDuration.count() / 1000.0;
 
     // 条件数計算（固有値から計算）
     double conditionNumber = 0.0;
@@ -756,11 +826,15 @@ void RandomMatrixAnalysis::runSingleSizeTest(int n, int testIndex) {
         }
     }
 
-    // 総計算時間
-    double totalTime = determinantTime + eigenvalueTime + linearSolverTime;
+    // 詳細時間を記録
+    ComputationTimes times;
+    times.determinantTime = determinantTime;
+    times.eigenvalueComputationTime = eigenvalueTime; // 固有値計算時間のみ
+    times.eigenvectorComputationTime = eigenvectorTime; // 固有ベクトル計算時間のみ
+    times.linearSolverTime = linearSolverTime;
 
     // 結果の表示
-    std::cout << "サイズ " << n << ": 行列式=" << std::fixed << std::setprecision(6) << determinant << ", 条件数=" << std::fixed << std::setprecision(6) << conditionNumber << ", ランク=" << rank << ", 計算時間=" << totalTime << "ms" << std::endl;
+    std::cout << "サイズ " << n << ": 行列式=" << std::fixed << std::setprecision(6) << determinant << ", 条件数=" << std::fixed << std::setprecision(6) << conditionNumber << ", ランク=" << rank << ", 計算時間=" << (determinantTime + eigenvalueTime + eigenvectorTime + linearSolverTime) << "ms" << std::endl;
 
     // 固有値の表示（最初の5個まで）
     std::cout << "固有値（最初の5個）:" << std::endl;
@@ -797,30 +871,30 @@ void RandomMatrixAnalysis::runRandomMatrixTest(int maxSize, int numTests) {
     // 各サイズでテスト実行
     for (int n = 1; n <= maxSize; n++) {
         for (int test = 0; test < numTests; test++) {
-            // ランダム行列の生成
-            auto matrix = generateRandomMatrix(n);
+            // 対称行列の生成（固有値計算用）
+            auto symmetricMatrix = generateSymmetricMatrix(n);
 
             // 右辺ベクトルの生成
             auto b = generateRandomVector(n);
 
             // 連立1次方程式の解を計算（時間測定）
             auto linearSolverStart = std::chrono::high_resolution_clock::now();
-            auto x = LinearSolver::solveLU(matrix, b);
+            auto x = LinearSolver::solveLU(symmetricMatrix, b);
             auto linearSolverEnd = std::chrono::high_resolution_clock::now();
             auto linearSolverDuration = std::chrono::duration_cast<std::chrono::microseconds>(linearSolverEnd - linearSolverStart);
             double linearSolverTime = linearSolverDuration.count() / 1000.0;
 
-            // 元の行列と右辺ベクトルを保存
+            // 対称行列と右辺ベクトルを保存
             std::string matrixAFilename = "data/A/" + std::to_string(n) + ".csv";
             std::string vectorBFilename = "data/B/" + std::to_string(n) + ".csv";
             std::string solutionXFilename = "data/x/" + std::to_string(n) + ".csv";
-            saveMatrixToCSV(matrix, matrixAFilename);
+            saveMatrixToCSV(symmetricMatrix, matrixAFilename);
             saveVectorToCSV(b, vectorBFilename);
             saveVectorToCSV(x, solutionXFilename);
 
             // 行列式計算（時間測定）
             auto detStart = std::chrono::high_resolution_clock::now();
-            double determinant = MatrixOperations::determinant(matrix);
+            double determinant = MatrixOperations::determinant(symmetricMatrix);
             auto detEnd = std::chrono::high_resolution_clock::now();
             auto detDuration = std::chrono::duration_cast<std::chrono::microseconds>(detEnd - detStart);
             double determinantTime = detDuration.count() / 1000.0;
@@ -829,14 +903,20 @@ void RandomMatrixAnalysis::runRandomMatrixTest(int maxSize, int numTests) {
             MatrixOperations::saveDeterminantToFile(n, determinant);
 
             // 条件数とランク計算
-            int rank = MatrixOperations::rank(matrix);
+            int rank = MatrixOperations::rank(symmetricMatrix);
 
-            // 固有値・固有ベクトル計算（時間測定）
+            // 固有値・固有ベクトル計算（分離して時間測定）
             auto eigenStart = std::chrono::high_resolution_clock::now();
-            auto [eigenvalues, eigenvectors] = EigenvalueAnalysis::qrEigenDecomposition(matrix);
+            auto eigenvalues = EigenvalueAnalysis::qrEigenvalueComputation(symmetricMatrix);
             auto eigenEnd = std::chrono::high_resolution_clock::now();
             auto eigenDuration = std::chrono::duration_cast<std::chrono::microseconds>(eigenEnd - eigenStart);
             double eigenvalueTime = eigenDuration.count() / 1000.0;
+
+            auto eigenvectorStart = std::chrono::high_resolution_clock::now();
+            auto eigenvectors = EigenvalueAnalysis::qrEigenvectorComputation(symmetricMatrix);
+            auto eigenvectorEnd = std::chrono::high_resolution_clock::now();
+            auto eigenvectorDuration = std::chrono::duration_cast<std::chrono::microseconds>(eigenvectorEnd - eigenvectorStart);
+            double eigenvectorTime = eigenvectorDuration.count() / 1000.0;
 
             // 条件数計算（固有値から計算）
             double conditionNumber = 0.0;
@@ -859,15 +939,12 @@ void RandomMatrixAnalysis::runRandomMatrixTest(int maxSize, int numTests) {
                 }
             }
 
-            // 総計算時間
-            double totalTime = determinantTime + eigenvalueTime + linearSolverTime;
-
             // 詳細時間を記録
             ComputationTimes times;
             times.determinantTime = determinantTime;
-            times.eigenvalueTime = eigenvalueTime;
+            times.eigenvalueComputationTime = eigenvalueTime; // 固有値計算時間のみ
+            times.eigenvectorComputationTime = eigenvectorTime; // 固有ベクトル計算時間のみ
             times.linearSolverTime = linearSolverTime;
-            times.totalTime = totalTime;
 
             // 結果を保存
             sizes.push_back(n);
@@ -875,7 +952,7 @@ void RandomMatrixAnalysis::runRandomMatrixTest(int maxSize, int numTests) {
             conditionNumbers.push_back(conditionNumber);
             ranks.push_back(rank);
             allEigenvalues.push_back(eigenvalues);
-            computationTimes.push_back(totalTime);
+            computationTimes.push_back(eigenvalueTime + eigenvectorTime);
             detailedTimes.push_back(times);
 
             // 固有値と固有ベクトルをCSV保存（横に並べて）
@@ -912,12 +989,14 @@ void RandomMatrixAnalysis::runRandomMatrixTest(int maxSize, int numTests) {
     std::string detailedTimesFilename = "data/detailed_computation_times.csv";
     std::string determinantTimesFilename = "data/determinant_times.csv";
     std::string eigenvalueTimesFilename = "data/eigenvalue_times.csv";
+    std::string eigenvectorTimesFilename = "data/eigenvector_times.csv";
     std::string linearSolverTimesFilename = "data/linear_solver_times.csv";
 
     saveMatrixPropertiesToCSV(propertiesFilename, sizes, determinants, ranks, conditionNumbers, allEigenvalues);
     saveDetailedTimesToCSV(detailedTimesFilename, sizes, detailedTimes);
     saveDeterminantTimesToCSV(determinantTimesFilename, sizes, detailedTimes);
     saveEigenvalueTimesToCSV(eigenvalueTimesFilename, sizes, detailedTimes);
+    saveEigenvectorTimesToCSV(eigenvectorTimesFilename, sizes, detailedTimes);
     saveLinearSolverTimesToCSV(linearSolverTimesFilename, sizes, detailedTimes);
 
     std::cout << "\n=== テスト完了 ===" << std::endl;
@@ -926,6 +1005,7 @@ void RandomMatrixAnalysis::runRandomMatrixTest(int maxSize, int numTests) {
     std::cout << "  詳細計算時間: " << detailedTimesFilename << std::endl;
     std::cout << "  行列式計算時間: " << determinantTimesFilename << std::endl;
     std::cout << "  固有値・固有ベクトル計算時間: " << eigenvalueTimesFilename << std::endl;
+    std::cout << "  固有ベクトル計算時間: " << eigenvectorTimesFilename << std::endl;
     std::cout << "  線形方程式解法時間: " << linearSolverTimesFilename << std::endl;
 
     // 統計情報の表示
