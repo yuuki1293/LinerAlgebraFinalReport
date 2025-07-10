@@ -27,6 +27,9 @@ data/random_matrix_*.csv
 data/eigenvalues_*.csv
 data/eigenvector_*.csv
 
+# Pythonプログラムディレクトリ
+pyprogram/
+
 # 固有値・固有ベクトルファイル
 data/eigen/*.csv
 
