@@ -75,12 +75,17 @@ $(TEST_TARGET): $(TEST_OBJECTS)
 run: $(MAIN_TARGET)
 	./$(MAIN_TARGET)
 
-# グラフ生成
+# 固有値・固有ベクトルグラフ生成
+eigen_plots:
+	@mkdir -p figures
+	gnuplot gnu/plot_eigen_times.gnu
+
+# 計算時間のグラフ生成
 plot:
 	@mkdir -p figures
 	gnuplot gnu/plot_determinant_times.gnu
-	gnuplot gnu/plot_eigenvalue_times.gnu
 	gnuplot gnu/plot_linear_solver_times.gnu
+	$(MAKE) eigen_plots
 
 # 個別計算時間のグラフ生成
 plot-det:
@@ -89,7 +94,7 @@ plot-det:
 
 plot-eigen:
 	@mkdir -p figures
-	gnuplot gnu/plot_eigenvalue_times.gnu
+	gnuplot gnu/plot_eigen_times.gnu
 
 plot-linear:
 	@mkdir -p figures
@@ -99,8 +104,8 @@ plot-linear:
 plot-all:
 	@mkdir -p figures
 	gnuplot gnu/plot_determinant_times.gnu
-	gnuplot gnu/plot_eigenvalue_times.gnu
 	gnuplot gnu/plot_linear_solver_times.gnu
+	$(MAKE) eigen_plots
 
 # クリーン
 clean:

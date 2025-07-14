@@ -12,11 +12,11 @@
 
 // QR法の反復回数設定
 #ifndef QR_MAX_ITERATIONS
-#define QR_MAX_ITERATIONS 1000
+#define QR_MAX_ITERATIONS 10000
 #endif
 
 #ifndef QR_TOLERANCE
-#define QR_TOLERANCE 1e-10
+#define QR_TOLERANCE 1e-12
 #endif
 
 // 計算時間を各項目ごとに記録する構造体
@@ -147,13 +147,9 @@ public:
                                          const std::vector<int>& sizes,
                                          const std::vector<ComputationTimes>& times);
 
-    static void saveEigenvalueTimesToCSV(const std::string& filename,
-                                        const std::vector<int>& sizes,
-                                        const std::vector<ComputationTimes>& times);
-
-    static void saveEigenvectorTimesToCSV(const std::string& filename,
-                                         const std::vector<int>& sizes,
-                                         const std::vector<ComputationTimes>& times);
+    static void saveEigenTimesToCSV(const std::string& filename,
+                                   const std::vector<int>& sizes,
+                                   const std::vector<ComputationTimes>& times);
 
     static void saveLinearSolverTimesToCSV(const std::string& filename,
                                           const std::vector<int>& sizes,

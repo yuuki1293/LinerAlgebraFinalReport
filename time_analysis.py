@@ -11,7 +11,7 @@ plt.rcParams['axes.unicode_minus'] = False
 # データの読み込み
 det_data = pd.read_csv('data/determinant_times.csv')
 linear_data = pd.read_csv('data/linear_solver_times.csv')
-eigen_data = pd.read_csv('data/eigenvalue_times.csv')
+eigen_data = pd.read_csv('data/eigen_times.csv')
 
 def power_law(x, a, b):
     """Power law: y = a * x^b"""
@@ -56,7 +56,7 @@ def analyze_complexity(data, title, eng_title, eng_ylabel):
     theoretical_powers = {
         "Determinant": 3.0,
         "Linear Solver": 3.0,
-        "Eigenvalue": 3.0
+        "EigenTime": 3.0
     }
     theoretical = theoretical_powers.get(title, 3.0)
     print(f"Theoretical exponent: {theoretical}")
@@ -100,15 +100,15 @@ print("=== Complexity Analysis of Computation Time ===")
 
 det_power, det_r2 = analyze_complexity(det_data, "Determinant", "Determinant", "Computation Time (ms)")
 linear_power, linear_r2 = analyze_complexity(linear_data, "Linear Solver", "Linear Solver", "Computation Time (ms)")
-eigen_power, eigen_r2 = analyze_complexity(eigen_data, "Eigenvalue", "Eigenvalue", "Computation Time (ms)")
+eigen_power, eigen_r2 = analyze_complexity(eigen_data, "EigenTime", "Eigenvalue & Eigenvector", "Computation Time (ms)")
 
 # Summary
 print("\n=== Summary of Analysis Results ===")
-print(f"{'Computation':<15} {'Measured Exp':<12} {'Theory Exp':<12} {'Ratio':<8} {'R²':<8}")
-print("-" * 60)
-print(f"{'Determinant':<15} {det_power:<12.3f} {3.0:<12.1f} {det_power/3.0:<8.3f} {det_r2:<8.3f}")
-print(f"{'Linear Solver':<15} {linear_power:<12.3f} {3.0:<12.1f} {linear_power/3.0:<8.3f} {linear_r2:<8.3f}")
-print(f"{'Eigenvalue':<15} {eigen_power:<12.3f} {3.0:<12.1f} {eigen_power/3.0:<8.3f} {eigen_r2:<8.3f}")
+print(f"{'Computation':<20} {'Measured Exp':<12} {'Theory Exp':<12} {'Ratio':<8} {'R²':<8}")
+print("-" * 70)
+print(f"{'Determinant':<20} {det_power:<12.3f} {3.0:<12.1f} {det_power/3.0:<8.3f} {det_r2:<8.3f}")
+print(f"{'Linear Solver':<20} {linear_power:<12.3f} {3.0:<12.1f} {linear_power/3.0:<8.3f} {linear_r2:<8.3f}")
+print(f"{'Eigenvalue & Eigenvector':<20} {eigen_power:<12.3f} {3.0:<12.1f} {eigen_power/3.0:<8.3f} {eigen_r2:<8.3f}")
 
 # Detailed analysis
 print("\n=== Detailed Analysis ===")
@@ -122,7 +122,7 @@ print(f"   - Measured exponent: {linear_power:.3f} (Theory: 3.0)")
 print(f"   - Ratio: {linear_power/3.0:.3f}")
 print(f"   - Reason: Same as determinant")
 
-print("\n3. Eigenvalue:")
+print("\n3. Eigenvalue & Eigenvector:")
 print(f"   - Measured exponent: {eigen_power:.3f} (Theory: 3.0)")
 print(f"   - Ratio: {eigen_power/3.0:.3f}")
-print(f"   - Reason: Iteration count of QR, overhead of convergence check")
+print(f"   - Reason: QR法の反復で固有値・固有ベクトルを同時に計算するため、計算量は理論値3.0に近い")
